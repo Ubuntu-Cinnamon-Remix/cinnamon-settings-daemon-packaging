@@ -3,7 +3,7 @@
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 %:
-	dh $@ --parallel --with=autoreconf,gir,gnome
+	dh $@ --parallel --with=autoreconf,gnome
 
 override_dh_autoreconf:
 	dh_autoreconf --as-needed ./autogen.sh
