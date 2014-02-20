@@ -8,5 +8,8 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 override_dh_autoreconf:
 	dh_autoreconf --as-needed ./autogen.sh
 
+override_dh_auto_test:
+	# Disable test suite on build time
+
 override_dh_install:
 	dh_install --list-missing
