@@ -1,5 +1,7 @@
 cinnamon-settings-daemon (2.0.10-1~) UNRELEASED; urgency=low
 
   * Initial release.
+  * Add autopkgtests.
+  * Update install files.
 
  -- Maximiliano Curia <maxy@debian.org>  Thu, 20 Feb 2014 16:51:27 +0100
