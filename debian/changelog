@@ -4,6 +4,7 @@ cinnamon-settings-daemon (2.2.1-1) experimental; urgency=low
   * Initial release (Closes: #745915).
   * Add autopkgtests.
   * Update install files.
+  * Update source_cinnamon-settings-daemon.py.
 
   [ Margarita Manterola ]
   * Remove control.in and gnome sequence in debian/rules.
