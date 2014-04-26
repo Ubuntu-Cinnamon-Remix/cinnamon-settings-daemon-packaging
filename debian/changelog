@@ -8,5 +8,6 @@ cinnamon-settings-daemon (2.2.1-1~) UNRELEASED; urgency=low
   [ Margarita Manterola ]
   * Remove control.in and gnome sequence in debian/rules.
   * New upstream release 2.2.1.
+  * Add myself to uploaders.
 
  -- Margarita Manterola <marga@debian.org>  Sat, 26 Apr 2014 22:10:54 +0200
