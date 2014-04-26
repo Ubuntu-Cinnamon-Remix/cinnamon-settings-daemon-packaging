@@ -1,7 +1,11 @@
 cinnamon-settings-daemon (2.0.10-1~) UNRELEASED; urgency=low
 
+  [ Maximiliano Curia ]
   * Initial release (Closes: #745915).
   * Add autopkgtests.
   * Update install files.
+
+  [ Margarita Manterola ]
+  * Remove control.in and gnome sequence in debian/rules.
 
  -- Maximiliano Curia <maxy@debian.org>  Thu, 20 Feb 2014 16:51:27 +0100

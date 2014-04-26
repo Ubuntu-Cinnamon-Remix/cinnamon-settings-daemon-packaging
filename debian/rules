@@ -8,7 +8,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 export NOCONFIGURE=yes
 
 %:
-	dh $@ --parallel --with=autoreconf,gnome
+	dh $@ --parallel --with=autoreconf
 
 override_dh_auto_configure:
 	dh_auto_configure -- --libexecdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)/cinnamon-settings-daemon
