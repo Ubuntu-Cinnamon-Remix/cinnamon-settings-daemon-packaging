@@ -1,6 +1,6 @@
 cinnamon-settings-daemon (2.0.10-1~) UNRELEASED; urgency=low
 
-  * Initial release.
+  * Initial release (Closes: #745915).
   * Add autopkgtests.
   * Update install files.
 
