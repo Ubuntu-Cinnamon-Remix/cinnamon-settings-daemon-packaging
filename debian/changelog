@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (2.2.1-1~) UNRELEASED; urgency=low
+cinnamon-settings-daemon (2.2.1-1~1) UNRELEASED; urgency=low
 
   [ Maximiliano Curia ]
   * Initial release (Closes: #745915).
@@ -10,5 +10,6 @@ cinnamon-settings-daemon (2.2.1-1~) UNRELEASED; urgency=low
   * New upstream release 2.2.1.
   * Add myself to uploaders.
   * Fix desktop file installation
+  * Fix /etc/dbus-1 file installation
 
  -- Margarita Manterola <marga@debian.org>  Sat, 26 Apr 2014 22:10:54 +0200
