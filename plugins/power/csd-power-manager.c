@@ -998,10 +998,10 @@ engine_coldplug (CsdPowerManager *manager)
         guint i;
         GPtrArray *array = NULL;
         UpDevice *device;
+#if ! UP_CHECK_VERSION(0,99,0)
         gboolean ret;
         GError *error = NULL;
-
-#if ! UP_CHECK_VERSION(0,99,0) 
+ 
         /* get devices from UPower */
         ret = up_client_enumerate_devices_sync (manager->priv->up_client, NULL, &error);
         if (!ret) {
@@ -1022,7 +1022,9 @@ engine_coldplug (CsdPowerManager *manager)
                 device = g_ptr_array_index (array, i);
                 engine_device_add (manager, device);
         }
+#if ! UP_CHECK_VERSION(0,99,0)
 out:
+#endif
         if (array != NULL)
                 g_ptr_array_unref (array);
         /* never repeat */
@@ -1038,6 +1040,20 @@ engine_device_added_cb (UpClient *client, UpDevice *device, CsdPowerManager *man
 }
 
 static void
+#if UP_CHECK_VERSION(0,99,0)
+engine_device_removed_cb (UpClient *client, const char *object_path, CsdPowerManager *manager)
+ {
+        guint i;
+
+        for (i = 0; i < manager->priv->devices_array->len; i++) {
+                UpDevice *device = g_ptr_array_index (manager->priv->devices_array, i);
+
+                if (g_strcmp0 (object_path, up_device_get_object_path (device)) == 0) {
+                        g_ptr_array_remove_index (manager->priv->devices_array, i);
+                        break;
+                }
+        }
+#else
 engine_device_removed_cb (UpClient *client, UpDevice *device, CsdPowerManager *manager)
 {
         gboolean ret;
@@ -1045,6 +1061,7 @@ engine_device_removed_cb (UpClient *client, UpDevice *device, CsdPowerManager *m
         if (!ret)
                 return;
         engine_recalculate_state (manager);
+#endif
 }
 
 static void
@@ -2215,7 +2232,11 @@ do_lid_closed_action (CsdPowerManager *manager)
 
 
 static void
+#if UP_CHECK_VERSION(0,99,0)
+lid_state_changed_cb (UpClient *client, GParamSpec *pspec, CsdPowerManager *manager)
+#else
 up_client_changed_cb (UpClient *client, CsdPowerManager *manager)
+#endif
 {
         gboolean tmp;
 
@@ -3967,8 +3988,13 @@ csd_power_manager_start (CsdPowerManager *manager,
                           G_CALLBACK (engine_device_removed_cb), manager);
         g_signal_connect (manager->priv->up_client, "device-changed",
                           G_CALLBACK (engine_device_changed_cb), manager);
+#if UP_CHECK_VERSION(0,99,0)
+        g_signal_connect_after (manager->priv->up_client, "notify::lid-is-closed",
+                                G_CALLBACK (lid_state_changed_cb), manager);
+#else
         g_signal_connect_after (manager->priv->up_client, "changed",
                                 G_CALLBACK (up_client_changed_cb), manager);
+#endif
 
         /* use the fallback name from gnome-power-manager so the shell
          * blocks this, and uses the power extension instead */
