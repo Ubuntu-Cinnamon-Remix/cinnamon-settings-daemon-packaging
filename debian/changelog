@@ -1,17 +1,12 @@
-cinnamon-settings-daemon (2.2.3-1) UNRELEASED; urgency=medium
-
-  * Update VCS fields.
-  * New upstream release.
-
- -- Maximiliano Curia <maxy@debian.org>  Thu, 15 May 2014 17:01:34 +0200
-
-cinnamon-settings-daemon (2.2.1-1) experimental; urgency=low
+cinnamon-settings-daemon (2.2.3-1) UNRELEASED; urgency=low
 
   [ Maximiliano Curia ]
   * Initial release (Closes: #745915).
   * Add autopkgtests.
   * Update install files.
   * Update source_cinnamon-settings-daemon.py.
+  * Update VCS fields.
+  * New upstream release 2.2.3.
 
   [ Margarita Manterola ]
   * Remove control.in and gnome sequence in debian/rules.
@@ -21,4 +16,4 @@ cinnamon-settings-daemon (2.2.1-1) experimental; urgency=low
   * Fix /etc/dbus-1 file installation
   * Use upstream manpage
 
- -- Margarita Manterola <marga@debian.org>  Mon, 28 Apr 2014 22:27:16 +0200
+ -- Margarita Manterola <marga@debian.org>  Fri, 16 May 2014 10:28:03 +0200
