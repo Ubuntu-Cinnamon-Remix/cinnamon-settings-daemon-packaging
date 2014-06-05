@@ -1,3 +1,10 @@
+cinnamon-settings-daemon (2.2.3-2~) UNRELEASED; urgency=low
+
+  [ Fabio Fantoni ]
+  * Add librsvg2-dev to Build-Depends otherwise the wacom plugin is missing.
+
+ -- Maximiliano Curia <maxy@debian.org>  Fri, 16 May 2014 20:16:29 +0200
+
 cinnamon-settings-daemon (2.2.3-1) experimental; urgency=low
 
   [ Maximiliano Curia ]
