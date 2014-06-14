@@ -1,12 +1,13 @@
-cinnamon-settings-daemon (2.2.3-2~) UNRELEASED; urgency=low
+cinnamon-settings-daemon (2.2.4-1~) UNRELEASED; urgency=low
 
   [ Fabio Fantoni ]
+  * New upstream release.
   * Add librsvg2-dev to Build-Depends otherwise the wacom plugin is missing.
   * Rename recommend systemd-services in systemd as the files of ubuntu's
     systemd-services package are in systemd debian package
   * Replace suggest metacity with muffin
 
- -- Maximiliano Curia <maxy@debian.org>  Fri, 16 May 2014 20:16:29 +0200
+ -- Maximiliano Curia <maxy@debian.org>  Sat, 14 Jun 2014 16:47:44 +0200
 
 cinnamon-settings-daemon (2.2.3-1) experimental; urgency=low
 
