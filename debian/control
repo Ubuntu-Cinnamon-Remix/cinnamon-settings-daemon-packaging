@@ -49,7 +49,7 @@ Depends: ${shlibs:Depends},
          gsettings-desktop-schemas (>= 3.3.90-0ubuntu2),
          nemo-data
 Recommends: pulseaudio,
-            systemd
+            consolekit
 Pre-Depends: ${misc:Pre-Depends}
 Breaks: rhythmbox (<< 0.11.5),
         banshee (<< 0.13.2+dfsg-7),

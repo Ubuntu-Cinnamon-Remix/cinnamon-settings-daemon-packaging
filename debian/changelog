@@ -3,8 +3,8 @@ cinnamon-settings-daemon (2.2.4-1~) UNRELEASED; urgency=low
   [ Fabio Fantoni ]
   * New upstream release.
   * Add librsvg2-dev to Build-Depends otherwise the wacom plugin is missing.
-  * Rename recommend systemd-services in systemd as the files of ubuntu's
-    systemd-services package are in systemd debian package
+  * Change recommend systemd-services in consolekit as the configure use
+    systemd only if specified and it isn't, so use consolekit instead.
   * Replace suggest metacity with muffin
 
  -- Maximiliano Curia <maxy@debian.org>  Sat, 14 Jun 2014 16:47:44 +0200
