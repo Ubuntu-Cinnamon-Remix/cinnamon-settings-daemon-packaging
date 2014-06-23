@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (2.2.4-1~) UNRELEASED; urgency=low
+cinnamon-settings-daemon (2.2.4-1~) UNRELEASED; urgency=medium
 
   [ Fabio Fantoni ]
   * New upstream release.
