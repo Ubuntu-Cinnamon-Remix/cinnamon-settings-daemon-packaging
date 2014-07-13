@@ -1,9 +1,10 @@
-cinnamon-settings-daemon (2.2.4-3~1) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.2.4.repack-1~) UNRELEASED; urgency=medium
 
+  * Repack orig.tar.gz without upstream debian and .pc dirs
   * Add systemd support, since ConsoleKit is deprecated.
   * New patch: xrandr-manager-upower-0.99-support
 
- -- Margarita Manterola <marga@debian.org>  Sun, 13 Jul 2014 19:55:34 +0200
+ -- Margarita Manterola <marga@debian.org>  Sun, 13 Jul 2014 20:32:34 +0200
 
 cinnamon-settings-daemon (2.2.4-1) experimental; urgency=medium
 
