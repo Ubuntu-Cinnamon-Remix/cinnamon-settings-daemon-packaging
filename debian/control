@@ -36,7 +36,8 @@ Build-Depends: debhelper (>= 9),
                xserver-xorg-input-wacom,
                libgnomekbd-dev (>= 3.4.0),
                libxklavier-dev,
-               librsvg2-dev
+               librsvg2-dev,
+               libsystemd-login-dev
 Standards-Version: 3.9.5
 Homepage: http://cinnamon.linuxmint.com
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-cinnamon/cinnamon-settings-daemon.git
@@ -48,8 +49,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          gsettings-desktop-schemas (>= 3.3.90-0ubuntu2),
          nemo-data
-Recommends: pulseaudio,
-            consolekit
+Recommends: pulseaudio
 Pre-Depends: ${misc:Pre-Depends}
 Breaks: rhythmbox (<< 0.11.5),
         banshee (<< 0.13.2+dfsg-7),
