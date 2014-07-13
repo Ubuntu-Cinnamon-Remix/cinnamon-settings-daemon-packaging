@@ -1,8 +1,9 @@
-cinnamon-settings-daemon (2.2.4-2~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.2.4-3~1) UNRELEASED; urgency=medium
 
   * Add systemd support, since ConsoleKit is deprecated.
+  * New patch: xrandr-manager-upower-0.99-support
 
- -- Margarita Manterola <marga@debian.org>  Sun, 13 Jul 2014 17:34:09 +0200
+ -- Margarita Manterola <marga@debian.org>  Sun, 13 Jul 2014 19:55:34 +0200
 
 cinnamon-settings-daemon (2.2.4-1) experimental; urgency=medium
 
