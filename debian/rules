@@ -26,3 +26,12 @@ override_dh_install:
 
 override_dh_makeshlibs:
 	# Disabled, no shared libraries here
+
+override_dh_link:
+	# Make *.links compatible with multiarch
+	for in_file in debian/*.links.in; do \
+	    out_file=$${in_file%.in}; \
+	    sed 's/\$${DEB_HOST_MULTIARCH}/'"$(DEB_HOST_MULTIARCH)"'/' \
+		"$${in_file}" > "$${out_file}"; \
+	done
+	dh_link
