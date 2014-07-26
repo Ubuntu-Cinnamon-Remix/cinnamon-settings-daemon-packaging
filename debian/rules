@@ -25,7 +25,8 @@ override_dh_install:
 	dh_install --list-missing
 
 override_dh_makeshlibs:
-	# Disabled, no shared libraries here
+	# Disabled, there are no shared libraries, but some plugins that cause this
+	# to fail
 
 override_dh_link:
 	# Make *.links compatible with multiarch
