@@ -1,9 +1,10 @@
-cinnamon-settings-daemon (2.2.4.repack-2~1) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.2.4.repack-2) unstable; urgency=medium
 
+  [ Fabio Fantoni ]
   * Fix usr/bin/cinnamon-settings-daemon broken link making it compatible
     with multiarch. (Closes: #755766)
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Wed, 23 Jul 2014 12:04:57 +0200
+ -- Margarita Manterola <marga@debian.org>  Sat, 26 Jul 2014 17:48:46 +0200
 
 cinnamon-settings-daemon (2.2.4.repack-1) unstable; urgency=medium
 
