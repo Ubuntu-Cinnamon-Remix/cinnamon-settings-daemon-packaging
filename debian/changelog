@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (2.2.4.repack-2~2) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.2.4.repack-2) unstable; urgency=medium
 
   [ Fabio Fantoni ]
   * Fix usr/bin/cinnamon-settings-daemon broken link making it compatible
@@ -7,7 +7,7 @@ cinnamon-settings-daemon (2.2.4.repack-2~2) UNRELEASED; urgency=medium
   [ Margarita Manterola ]
   * Add patch to fix battery status in power panel (Closes: #755896).
 
- -- Margarita Manterola <marga@debian.org>  Sat, 26 Jul 2014 17:48:46 +0200
+ -- Margarita Manterola <marga@debian.org>  Sat, 26 Jul 2014 22:31:55 +0200
 
 cinnamon-settings-daemon (2.2.4.repack-1) unstable; urgency=medium
 
