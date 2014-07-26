@@ -1,8 +1,11 @@
-cinnamon-settings-daemon (2.2.4.repack-2) unstable; urgency=medium
+cinnamon-settings-daemon (2.2.4.repack-2~2) UNRELEASED; urgency=medium
 
   [ Fabio Fantoni ]
   * Fix usr/bin/cinnamon-settings-daemon broken link making it compatible
     with multiarch. (Closes: #755766)
+
+  [ Margarita Manterola]
+  * Add patch to fix battery status in power panel.
 
  -- Margarita Manterola <marga@debian.org>  Sat, 26 Jul 2014 17:48:46 +0200
 
