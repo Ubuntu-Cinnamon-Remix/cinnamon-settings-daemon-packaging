@@ -1,3 +1,9 @@
+cinnamon-settings-daemon (2.2.4.repack-4) unstable; urgency=medium
+
+  * Move more build dependencies to linux-any in order to get kFreeBSD to work.
+
+ -- Margarita Manterola <marga@debian.org>  Sat, 30 Aug 2014 19:02:37 -0700
+
 cinnamon-settings-daemon (2.2.4.repack-3) unstable; urgency=medium
 
   * Remove xserver-xorg-input-wacom as a dependency on s390x, as it's not
