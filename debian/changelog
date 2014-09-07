@@ -1,9 +1,9 @@
-cinnamon-settings-daemon (2.2.4.repack-5) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.2.4.repack-5) unstable; urgency=medium
 
   * Remove xserver-xorg-input-wacom as a dependency on kFreeBSD and Hurd as well
     as s390x, also not available there.
 
- -- Margarita Manterola <marga@debian.org>  Sun, 07 Sep 2014 16:37:15 +0200
+ -- Margarita Manterola <marga@debian.org>  Sun, 07 Sep 2014 16:47:46 +0200
 
 cinnamon-settings-daemon (2.2.4.repack-4) unstable; urgency=medium
 
