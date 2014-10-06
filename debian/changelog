@@ -1,7 +1,11 @@
 cinnamon-settings-daemon (2.2.4.repack-6~) UNRELEASED; urgency=medium
 
+  [ Fabio Fantoni ]
   * Use systemd only with linux to solves FTBFS on kfreebsd. (Closes: #761370)
     Thanks to Pino Toscano.
+
+  [ Maximiliano Curia ]
+  * Bump Standards-Version to 3.9.6, no further changes.
 
  -- Fabio Fantoni <fantonifabio@tiscali.it>  Mon, 06 Oct 2014 11:04:45 +0200
 
