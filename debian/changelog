@@ -1,3 +1,10 @@
+cinnamon-settings-daemon (2.2.4.repack-6~) UNRELEASED; urgency=medium
+
+  * Use systemd only with linux to solves FTBFS on kfreebsd. (Closes: #761370)
+    Thanks to Pino Toscano.
+
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Mon, 06 Oct 2014 11:04:45 +0200
+
 cinnamon-settings-daemon (2.2.4.repack-5) unstable; urgency=medium
 
   * Remove xserver-xorg-input-wacom as a dependency on kFreeBSD and Hurd as well
