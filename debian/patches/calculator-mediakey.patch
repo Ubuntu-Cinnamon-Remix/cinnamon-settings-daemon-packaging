@@ -1,0 +1,21 @@
+Description: Multiple upstream commits about calculator mediakey improvement
+Author: leigh123linux
+Origin: upstream
+--- a/plugins/media-keys/csd-media-keys-manager.c
++++ b/plugins/media-keys/csd-media-keys-manager.c
+@@ -1837,7 +1837,14 @@
+                 do_media_action (manager, timestamp);
+                 break;
+         case CALCULATOR_KEY:
+-                do_execute_desktop (manager, "gcalctool.desktop", timestamp);
++                if ((cmd = g_find_program_in_path ("gnome-calculator"))) {
++                        execute (manager, "gnome-calculator", FALSE);
++                } else if ((cmd = g_find_program_in_path ("gcalctool"))) {
++                        execute (manager, "gcalctool", FALSE);
++                } else {
++                        execute (manager, "mate-calc", FALSE);
++                }
++                g_free (cmd);
+                 break;
+         case PLAY_KEY:
+                 return do_multimedia_player_action (manager, NULL, "Play");
