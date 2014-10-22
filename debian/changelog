@@ -1,8 +1,10 @@
 cinnamon-settings-daemon (2.2.4.repack-7~) UNRELEASED; urgency=medium
 
   * Add patch to fix calculator media key. (Closes: #762382)
+  * Add patch to enable 3 finger tap. (Closes: #766300)
+    Thanks to Andrew Chadwick.
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Sun, 12 Oct 2014 15:28:48 +0200
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Wed, 22 Oct 2014 14:52:27 +0200
 
 cinnamon-settings-daemon (2.2.4.repack-6) unstable; urgency=medium
 
