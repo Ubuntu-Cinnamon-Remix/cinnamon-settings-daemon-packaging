@@ -236,6 +236,10 @@ static void      do_lid_closed_action (CsdPowerManager *manager);
 static void      lock_screensaver (CsdPowerManager *manager);
 static void      kill_lid_close_safety_timer (CsdPowerManager *manager);
 
+#if UP_CHECK_VERSION(0,99,0)
+static void device_properties_changed_cb (UpDevice *device, GParamSpec *pspec, CsdPowerManager *manager);
+#endif
+
 G_DEFINE_TYPE (CsdPowerManager, csd_power_manager, G_TYPE_OBJECT)
 
 static gpointer manager_object = NULL;
@@ -990,6 +994,16 @@ engine_device_add (CsdPowerManager *manager, UpDevice *device)
                                    "engine-state-old",
                                    GUINT_TO_POINTER(state));
         }
+
+#if UP_CHECK_VERSION(0,99,0)
+        g_ptr_array_add (manager->priv->devices_array, g_object_ref(device));
+
+        g_signal_connect (device, "notify::state",
+                          G_CALLBACK (device_properties_changed_cb), manager);
+        g_signal_connect (device, "notify::warning-level",
+                          G_CALLBACK (device_properties_changed_cb), manager);
+#endif
+
 }
 
 static gboolean
@@ -1674,8 +1688,10 @@ engine_charge_action (CsdPowerManager *manager, UpDevice *device)
         }
 
         /* not all types have actions */
-        if (title == NULL)
+        if (title == NULL) {
+                g_free (message);
                 return;
+        }
 
         /* get correct icon */
         icon = gpm_upower_get_device_icon (device, TRUE);
@@ -1714,7 +1730,11 @@ out:
 }
 
 static void
+#if UP_CHECK_VERSION(0,99,0)
+device_properties_changed_cb (UpDevice *device, GParamSpec *pspec, CsdPowerManager *manager)
+#else
 engine_device_changed_cb (UpClient *client, UpDevice *device, CsdPowerManager *manager)
+#endif
 {
         UpDeviceKind kind;
         UpDeviceState state;
@@ -3446,16 +3466,16 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
         g_variant_get (k_now, "(i)", &manager->priv->kbd_brightness_now);
         g_variant_get (k_max, "(i)", &manager->priv->kbd_brightness_max);
 
-        /* set brightness to max if not currently set so is something
-         * sensible */
-        if (manager->priv->kbd_brightness_now <= 0) {
+        /* Set keyboard brightness to zero if the current value is out of valid range.
+        Unlike display brightness, keyboard backlight brightness should be dim by default.*/
+        if ((manager->priv->kbd_brightness_now  < 0) || (manager->priv->kbd_brightness_now > manager->priv->kbd_brightness_max)) {
                 gboolean ret;
                 ret = upower_kbd_set_brightness (manager,
-                                                 manager->priv->kbd_brightness_max,
+                                                 0,
                                                  &error);
                 if (!ret) {
                         g_warning ("failed to initialize kbd backlight to %i: %s",
-                                   manager->priv->kbd_brightness_max,
+                                   0,
                                    error->message);
                         g_error_free (error);
                 }
@@ -3986,12 +4006,12 @@ csd_power_manager_start (CsdPowerManager *manager,
                           G_CALLBACK (engine_device_added_cb), manager);
         g_signal_connect (manager->priv->up_client, "device-removed",
                           G_CALLBACK (engine_device_removed_cb), manager);
-        g_signal_connect (manager->priv->up_client, "device-changed",
-                          G_CALLBACK (engine_device_changed_cb), manager);
 #if UP_CHECK_VERSION(0,99,0)
         g_signal_connect_after (manager->priv->up_client, "notify::lid-is-closed",
                                 G_CALLBACK (lid_state_changed_cb), manager);
 #else
+        g_signal_connect (manager->priv->up_client, "device-changed",
+                          G_CALLBACK (engine_device_changed_cb), manager);
         g_signal_connect_after (manager->priv->up_client, "changed",
                                 G_CALLBACK (up_client_changed_cb), manager);
 #endif
