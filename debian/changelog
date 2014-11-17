@@ -1,3 +1,10 @@
+cinnamon-settings-daemon (2.4.3-1~) UNRELEASED; urgency=medium
+
+  * New upstream release.
+  * debian/patches: removed 4 patches applied upstream.
+
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Mon, 17 Nov 2014 10:47:49 +0100
+
 cinnamon-settings-daemon (2.2.4.repack-7) unstable; urgency=medium
 
   [ Fabio Fantoni ]
