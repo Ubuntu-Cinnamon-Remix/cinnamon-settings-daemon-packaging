@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 
 AC_INIT([cinnamon-settings-daemon],
-        [2.2.4],
+        [2.4.3],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=cinnamon-settings-daemon])
 
 AC_CONFIG_SRCDIR([cinnamon-settings-daemon/cinnamon-settings-manager.c])
@@ -182,6 +182,12 @@ dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(AUTOMOUNT, x11 kbproto)
 
 dnl ---------------------------------------------------------------------------
+dnl - background
+dnl ---------------------------------------------------------------------------
+
+PKG_CHECK_MODULES(BACKGROUND, x11 cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION)
+
+dnl ---------------------------------------------------------------------------
 dnl - mouse
 dnl ---------------------------------------------------------------------------
 
@@ -216,7 +222,8 @@ dnl ---------------------------------------------------------------------------
 dnl - media-keys plugin stuff
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(MEDIA_KEYS, [gio-unix-2.0 libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-mainloop-glib >= $PA_REQUIRED_VERSION libcanberra libnotify])
+PKG_CHECK_MODULES(MEDIA_KEYS, [gio-unix-2.0 libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-mainloop-glib >= $PA_REQUIRED_VERSION
+			       libcanberra libnotify cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION])
 
 dnl ---------------------------------------------------------------------------
 dnl - xrandr plugin stuff
@@ -236,7 +243,7 @@ dnl ---------------------------------------------------------------------------
 dnl - sound plugin stuff
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(SOUND, [libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-mainloop-glib >= $PA_REQUIRED_VERSION])
+PKG_CHECK_MODULES(SOUND, [libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-mainloop-glib >= $PA_REQUIRED_VERSION] libcanberra)
 
 # ---------------------------------------------------------------------------
 # Power
@@ -526,6 +533,7 @@ plugins/Makefile
 plugins/a11y-keyboard/Makefile
 plugins/a11y-settings/Makefile
 plugins/automount/Makefile
+plugins/background/Makefile
 plugins/clipboard/Makefile
 plugins/color/Makefile
 plugins/common/Makefile
@@ -561,6 +569,7 @@ data/org.cinnamon.settings-daemon.plugins.orientation.gschema.xml.in
 data/org.cinnamon.settings-daemon.peripherals.wacom.gschema.xml.in
 data/org.cinnamon.settings-daemon.plugins.xrandr.gschema.xml.in
 data/org.cinnamon.settings-daemon.plugins.print-notifications.gschema.xml.in
+data/org.cinnamon.settings-daemon.plugins.background.gschema.xml.in
 po/Makefile.in
 man/Makefile
 ])
