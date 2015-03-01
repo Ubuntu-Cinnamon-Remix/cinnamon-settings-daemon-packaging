@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (2.4.3-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.4.3-1) experimental; urgency=medium
 
   [ Fabio Fantoni ]
   * New upstream release.
@@ -7,7 +7,7 @@ cinnamon-settings-daemon (2.4.3-1~) UNRELEASED; urgency=medium
   [ Maximiliano Curia ]
   * Update copyright information.
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Mon, 17 Nov 2014 10:47:49 +0100
+ -- Maximiliano Curia <maxy@debian.org>  Sun, 01 Mar 2015 22:32:55 +0100
 
 cinnamon-settings-daemon (2.2.4.repack-7) unstable; urgency=medium
 
