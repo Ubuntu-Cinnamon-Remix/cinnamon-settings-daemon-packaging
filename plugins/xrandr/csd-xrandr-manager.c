@@ -650,11 +650,7 @@ user_says_things_are_ok (CsdXrandrManager *manager, GdkWindow *parent_window)
         gtk_main ();
 
         gtk_widget_destroy (timeout.dialog);
-
-        if (timeout_id) {
-            g_source_remove (timeout_id);
-            timeout_id = 0;
-        }
+        g_source_remove (timeout_id);
 
         if (timeout.response_id == GTK_RESPONSE_ACCEPT)
                 return TRUE;
@@ -1022,7 +1018,8 @@ make_laptop_setup (CsdXrandrManager *manager, GnomeRRScreen *screen)
                 }
         }
 
-        if (result != NULL && config_is_all_off (result)) {
+
+        if (config_is_all_off (result)) {
                 g_object_unref (G_OBJECT (result));
                 result = NULL;
         }
@@ -1128,6 +1125,14 @@ trim_rightmost_outputs_that_dont_fit_in_framebuffer (GnomeRRScreen *rr_screen, G
         return applicable;
 }
 
+static gboolean
+follow_laptop_lid(CsdXrandrManager *manager)
+{
+        CsdXrandrBootBehaviour val;
+        val = g_settings_get_enum (manager->priv->settings, CONF_KEY_DEFAULT_MONITORS_SETUP);
+        return val == CSD_XRANDR_BOOT_BEHAVIOUR_FOLLOW_LID || val == CSD_XRANDR_BOOT_BEHAVIOUR_CLONE;
+}
+
 static GnomeRRConfig *
 make_xinerama_setup (CsdXrandrManager *manager, GnomeRRScreen *screen)
 {
@@ -1146,7 +1151,7 @@ make_xinerama_setup (CsdXrandrManager *manager, GnomeRRScreen *screen)
                 GnomeRROutputInfo *info = outputs[i];
 
                 if (is_laptop (screen, info)) {
-                        if (laptop_lid_is_closed (manager))
+                        if (laptop_lid_is_closed (manager) && follow_laptop_lid (manager))
                                 gnome_rr_output_info_set_active (info, FALSE);
                         else {
                                 gnome_rr_output_info_set_primary (info, TRUE);
@@ -1538,6 +1543,7 @@ is_wacom_tablet_device (CsdXrandrManager *mgr,
         wacom_device = libwacom_new_from_path (priv->wacom_db, device_node, FALSE, NULL);
         g_free (device_node);
         if (wacom_device == NULL) {
+                g_free (device_node);
                 return FALSE;
         }
         is_tablet = libwacom_has_touch (wacom_device) &&
@@ -1862,6 +1868,12 @@ apply_default_boot_configuration (CsdXrandrManager *mgr, guint32 timestamp)
         switch (boot) {
         case CSD_XRANDR_BOOT_BEHAVIOUR_DO_NOTHING:
                 return;
+        case CSD_XRANDR_BOOT_BEHAVIOUR_FOLLOW_LID:
+                if (laptop_lid_is_closed (mgr))
+                        config = make_other_setup (screen);
+                else
+                        config = make_xinerama_setup (mgr, screen);
+                break;
         case CSD_XRANDR_BOOT_BEHAVIOUR_CLONE:
                 config = make_clone_setup (mgr, screen);
                 break;
@@ -1992,6 +2004,8 @@ power_client_changed_cb (UpClient *client, gpointer data)
 
         if (is_closed != priv->laptop_lid_is_closed) {
                 priv->laptop_lid_is_closed = is_closed;
+                if (!follow_laptop_lid (manager))
+                    return;
 
                 /* Refresh the RANDR state.  The lid just got opened/closed, so we can afford to
                  * probe the outputs right now.  It will also help the case where we can't detect
@@ -2003,8 +2017,12 @@ power_client_changed_cb (UpClient *client, gpointer data)
 
                 if (is_closed)
                         turn_off_laptop_display (manager, GDK_CURRENT_TIME); /* sucks not to have a timestamp for the notification */
-                else
-                        use_stored_configuration_or_auto_configure_outputs (manager, GDK_CURRENT_TIME);
+
+                /* Use stored configuration or auto-configure outputs all the
+                 * time. Don't switch between 2 possibilities; notebook can be
+                 * woken up with lid closed and then no output is activated.
+                 */
+                use_stored_configuration_or_auto_configure_outputs (manager, GDK_CURRENT_TIME);
         }
 }
 
