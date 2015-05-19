@@ -1,8 +1,8 @@
 AC_PREREQ([2.60])
 
 AC_INIT([cinnamon-settings-daemon],
-        [2.4.3],
-        [http://bugzilla.gnome.org/enter_bug.cgi?product=cinnamon-settings-daemon])
+        [2.6.0],
+        [https://github.com/linuxmint/cinnamon-settings-daemon/issues])
 
 AC_CONFIG_SRCDIR([cinnamon-settings-daemon/cinnamon-settings-manager.c])
 
@@ -43,17 +43,16 @@ dnl ---------------------------------------------------------------------------
 dnl - Dependencies
 dnl ---------------------------------------------------------------------------
 
-GLIB_REQUIRED_VERSION=2.31.0
-GTK_REQUIRED_VERSION=3.3.18
+GLIB_REQUIRED_VERSION=2.37.3
+GTK_REQUIRED_VERSION=3.9.10
 GCONF_REQUIRED_VERSION=2.6.1
 GIO_REQUIRED_VERSION=2.26.0
-CINNAMON_DESKTOP_REQUIRED_VERSION=1.0.0
+CINNAMON_DESKTOP_REQUIRED_VERSION=2.4.0
 LIBNOTIFY_REQUIRED_VERSION=0.7.3
-UPOWER_GLIB_REQUIRED_VERSION=0.9.1
+UPOWER_GLIB_REQUIRED_VERSION=0.9.11
 PA_REQUIRED_VERSION=0.9.16
 LIBWACOM_REQUIRED_VERSION=0.7
 LIBRSVG_REQUIRED_VERSION=2.36.2
-UPOWER_REQUIRED_VERSION=0.9.11
 GTK_XINPUT_2_3_VERSION=3.7.8
 
 #EXTRA_COMPILE_WARNINGS(yes)
@@ -209,7 +208,7 @@ dnl ---------------------------------------------------------------------------
 dnl - Keyboard plugin stuff
 dnl ---------------------------------------------------------------------------
 
-LIBGNOMEKBD_REQUIRED=2.91.1
+LIBGNOMEKBD_REQUIRED=3.6.0
 PKG_CHECK_MODULES(KEYBOARD, [libgnomekbdui >= $LIBGNOMEKBD_REQUIRED libgnomekbd >= $LIBGNOMEKBD_REQUIRED libxklavier >= 5.0 kbproto])
 
 dnl ---------------------------------------------------------------------------
@@ -229,7 +228,7 @@ dnl ---------------------------------------------------------------------------
 dnl - xrandr plugin stuff
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(XRANDR, [cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION upower-glib >= $UPOWER_REQUIRED_VERSION])
+PKG_CHECK_MODULES(XRANDR, [cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION upower-glib >= $UPOWER_GLIB_REQUIRED_VERSION])
 
 dnl ---------------------------------------------------------------------------
 dnl - orientation plugin stuff
@@ -248,7 +247,7 @@ PKG_CHECK_MODULES(SOUND, [libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-m
 # ---------------------------------------------------------------------------
 # Power
 # ---------------------------------------------------------------------------
-PKG_CHECK_MODULES(POWER, upower-glib >= $UPOWER_REQUIRED_VERSION cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION libcanberra-gtk3 libnotify x11 xext)
+PKG_CHECK_MODULES(POWER, upower-glib >= $UPOWER_GLIB_REQUIRED_VERSION cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION libcanberra-gtk3 libnotify x11 xext)
 
 if test x$have_gudev != xno; then
 	PKG_CHECK_MODULES(BACKLIGHT_HELPER,
@@ -261,7 +260,7 @@ dnl ---------------------------------------------------------------------------
 dnl - color
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(COLOR, [colord >= 0.1.9 cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION libcanberra-gtk3])
+PKG_CHECK_MODULES(COLOR, [colord >= 0.1.27 cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION libcanberra-gtk3])
 
 dnl ---------------------------------------------------------------------------
 dnl - wacom
@@ -370,26 +369,18 @@ AM_CONDITIONAL(HAVE_POLKIT, test "x$HAVE_POLKIT" = "xyes")
 AC_SUBST(POLKIT_CFLAGS)
 AC_SUBST(POLKIT_LIBS)
 
-dnl ==============================================
-dnl systemd check
-dnl ==============================================
+dnl ====================================================================
+dnl Check for logind
+dnl ====================================================================
 
-AC_ARG_ENABLE([systemd],
-              AS_HELP_STRING([--enable-systemd], [Use systemd for session tracking]),
-              [with_systemd=$enableval],
-              [with_systemd=auto])
-if test "$with_systemd" = "yes" ; then
-  PKG_CHECK_MODULES(SYSTEMD, [libsystemd-login])
-  AC_DEFINE(HAVE_SYSTEMD, 1, [Define if systemd is used for session tracking])
-  SESSION_TRACKING=systemd
-else
-  SESSION_TRACKING=ConsoleKit
+PKG_CHECK_MODULES(LOGIND, [libsystemd-login], [have_logind=yes], [have_logind=no])
+
+if test x$have_logind = xyes; then
+    AC_DEFINE(HAVE_LOGIND, 1, [Define if logind is supported])
 fi
 
-AC_SUBST(SYSTEMD_CFLAGS)
-AC_SUBST(SYSTEMD_LIBS)
-
-AM_CONDITIONAL(WITH_SYSTEMD, [test "$with_systemd" = "yes"], [Using systemd])
+AC_SUBST(LOGIND_CFLAGS)
+AC_SUBST(LOGIND_LIBS)
 
 # ---------------------------------------------------------------------------
 # CUPS
@@ -600,7 +591,7 @@ echo "
         dbus-1 system.d dir:      ${DBUS_SYS_DIR}
         PolicyKit support:        ${HAVE_POLKIT}
 
-        Session tracking:         ${SESSION_TRACKING}
+        Logind supported:         ${have_logind}
         LCMS DICT support:        ${have_new_lcms}
         Libnotify support:        ${have_libnotify}
 
