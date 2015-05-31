@@ -1,6 +1,10 @@
-cinnamon-settings-daemon (2.6.0-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.6.2-1~) UNRELEASED; urgency=medium
 
-  * New upstream release (2.6.0).
+  [ Maximiliano Curia ]
+  * New upstream release.
+
+  [ Fabio Fantoni ]
+  * Update dependencies.
 
  -- Maximiliano Curia <maxy@debian.org>  Tue, 19 May 2015 17:15:23 +0200
 
