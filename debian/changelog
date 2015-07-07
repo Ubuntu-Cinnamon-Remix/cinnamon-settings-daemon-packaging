@@ -1,8 +1,11 @@
-cinnamon-settings-daemon (2.6.3-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.6.3-1) unstable; urgency=medium
 
+  [ Fabio Fantoni ]
   * New upstream release.
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Sat, 27 Jun 2015 18:45:28 +0200
+  [ Maximiliano Curia ]
+
+ -- Maximiliano Curia <maxy@debian.org>  Tue, 07 Jul 2015 14:58:34 +0200
 
 cinnamon-settings-daemon (2.6.2-1) unstable; urgency=medium
 
