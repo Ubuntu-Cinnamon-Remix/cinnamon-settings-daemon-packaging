@@ -1,8 +1,11 @@
-cinnamon-settings-daemon (2.6.3-2~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.6.3-2) unstable; urgency=medium
 
+  [ Fabio Fantoni ]
   * Transition to libsystemd, thanks to Michael Biebl. (Closes: #779771)
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Sun, 12 Jul 2015 14:54:30 +0200
+  [ Maximiliano Curia ]
+
+ -- Maximiliano Curia <maxy@debian.org>  Mon, 13 Jul 2015 21:38:47 +0200
 
 cinnamon-settings-daemon (2.6.3-1) unstable; urgency=medium
 
