@@ -211,6 +211,13 @@ device_info_is_touchscreen (XDeviceInfo *device_info)
 }
 
 gboolean
+device_info_is_tablet (XDeviceInfo *device_info)
+{
+        /* Note that this doesn't match Wacom tablets */
+        return (device_info->type == XInternAtom (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), XI_TABLET, False));
+}
+
+gboolean
 device_info_is_mouse (XDeviceInfo *device_info)
 {
         return (device_info->type == XInternAtom (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), XI_MOUSE, False));
@@ -253,11 +260,11 @@ device_type_is_present (InfoIdentifyFunc info_func,
 
                 retval = (device_func) (device);
                 if (retval) {
-                        XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), device);
+                        xdevice_close (device);
                         break;
                 }
 
-                XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), device);
+                xdevice_close (device);
         }
         XFreeDeviceList (device_info);
 
@@ -551,4 +558,12 @@ get_disabled_devices (GdkDeviceManager *manager)
         XFreeDeviceList (device_info);
 
         return ret;
+}
+
+void
+xdevice_close (XDevice *xdevice)
+{
+    gdk_error_trap_push ();
+    XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), xdevice);
+    gdk_error_trap_pop_ignored();
 }
