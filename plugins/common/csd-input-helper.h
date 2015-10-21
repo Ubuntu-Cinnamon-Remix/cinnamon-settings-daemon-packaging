@@ -62,6 +62,7 @@ gboolean  device_is_touchpad       (XDevice                *xdevice);
 
 gboolean  device_info_is_touchpad    (XDeviceInfo         *device_info);
 gboolean  device_info_is_touchscreen (XDeviceInfo         *device_info);
+gboolean  device_info_is_tablet      (XDeviceInfo         *device_info);
 gboolean  device_info_is_mouse       (XDeviceInfo         *device_info);
 
 gboolean  touchpad_is_present     (void);
@@ -78,6 +79,7 @@ gboolean  run_custom_command      (GdkDevice              *device,
 GList *   get_disabled_devices     (GdkDeviceManager       *manager);
 char *    xdevice_get_device_node  (int                     deviceid);
 int       xdevice_get_last_tool_id (int                     deviceid);
+void      xdevice_close            (XDevice                *xdevice);
 
 G_END_DECLS
 

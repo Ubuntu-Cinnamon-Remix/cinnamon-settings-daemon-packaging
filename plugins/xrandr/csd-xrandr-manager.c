@@ -45,6 +45,7 @@
 
 #include <libcinnamon-desktop/gnome-rr-config.h>
 #include <libcinnamon-desktop/gnome-rr.h>
+#include <libcinnamon-desktop/gnome-pnp-ids.h>
 
 #ifdef HAVE_WACOM
 #include <libwacom/libwacom.h>
@@ -74,7 +75,7 @@
 #define CSD_XRANDR_DBUS_PATH CSD_DBUS_PATH "/XRANDR"
 
 static const gchar introspection_xml[] =
-"<node>"
+"<node name='/org/cinnamon/SettingsDaemon/XRANDR'>"
 "  <interface name='org.cinnamon.SettingsDaemon.XRANDR_2'>"
 "    <annotation name='org.freedesktop.DBus.GLib.CSymbol' value='csd_xrandr_manager_2'/>"
 "    <method name='ApplyConfiguration'>"
@@ -480,11 +481,11 @@ apply_configuration_from_filename (CsdXrandrManager *manager,
 
 /* This function centralizes the use of gnome_rr_config_apply_with_time().
  *
- * Applies a configuration and displays an error message if an error happens.
+ * Applies a configuration.
  * We just return whether setting the configuration succeeded.
  */
 static gboolean
-apply_configuration (CsdXrandrManager *manager, GnomeRRConfig *config, guint32 timestamp, gboolean show_error, gboolean save_configuration)
+apply_configuration (CsdXrandrManager *manager, GnomeRRConfig *config, guint32 timestamp, gboolean save_configuration)
 {
         CsdXrandrManagerPrivate *priv = manager->priv;
         GError *error;
@@ -502,8 +503,6 @@ apply_configuration (CsdXrandrManager *manager, GnomeRRConfig *config, guint32 t
         } else {
                 log_msg ("Could not switch to the following configuration (timestamp %u): %s\n", timestamp, error->message);
                 log_configuration (config);
-                if (show_error)
-                        error_message (manager, _("Could not switch the monitor configuration"), error, NULL);
                 g_error_free (error);
         }
 
@@ -628,6 +627,7 @@ user_says_things_are_ok (CsdXrandrManager *manager, GdkWindow *parent_window)
 
         print_countdown_text (&timeout);
 
+        gtk_window_set_title (GTK_WINDOW (timeout.dialog), _("Confirm New Configuration"));
         gtk_window_set_icon_name (GTK_WINDOW (timeout.dialog), "preferences-desktop-display");
         gtk_dialog_add_button (GTK_DIALOG (timeout.dialog), _("_Restore Previous Configuration"), GTK_RESPONSE_CANCEL);
         gtk_dialog_add_button (GTK_DIALOG (timeout.dialog), _("_Keep This Configuration"), GTK_RESPONSE_ACCEPT);
@@ -1045,16 +1045,16 @@ turn_on_and_get_rightmost_offset (GnomeRRScreen *screen, GnomeRROutputInfo *info
         return x;
 }
 
-/* Used from qsort(); compares outputs based on their X position */
+/* Used from g_ptr_array_sort(); compares outputs based on their X position */
 static int
-compare_output_positions (const void *a, const void *b)
+compare_output_positions (gconstpointer a, gconstpointer b)
 {
-        GnomeRROutputInfo *oa = (GnomeRROutputInfo *) a;
-        GnomeRROutputInfo *ob = (GnomeRROutputInfo *) b;
+        GnomeRROutputInfo **oa = (GnomeRROutputInfo **) a;
+        GnomeRROutputInfo **ob = (GnomeRROutputInfo **) b;
         int xa, xb;
 
-        gnome_rr_output_info_get_geometry (oa, &xa, NULL, NULL, NULL);
-        gnome_rr_output_info_get_geometry (ob, &xb, NULL, NULL, NULL);
+        gnome_rr_output_info_get_geometry (*oa, &xa, NULL, NULL, NULL);
+        gnome_rr_output_info_get_geometry (*ob, &xb, NULL, NULL, NULL);
 
         return xb - xa;
 }
@@ -1068,39 +1068,30 @@ static gboolean
 trim_rightmost_outputs_that_dont_fit_in_framebuffer (GnomeRRScreen *rr_screen, GnomeRRConfig *config)
 {
         GnomeRROutputInfo **outputs;
-        GnomeRROutputInfo **sorted_outputs;
-        int num_on_outputs;
-        int i, j;
+        int i;
         gboolean applicable;
+        GPtrArray *sorted_outputs;
 
         outputs = gnome_rr_config_get_outputs (config);
+        g_return_val_if_fail (outputs != NULL, FALSE);
 
         /* How many are on? */
 
-        num_on_outputs = 0;
+        sorted_outputs = g_ptr_array_new ();
         for (i = 0; outputs[i] != NULL; i++) {
                 if (gnome_rr_output_info_is_active (outputs[i]))
-                        num_on_outputs++;
+                        g_ptr_array_add (sorted_outputs, outputs[i]);
         }
 
         /* Lay them out from left to right */
 
-        sorted_outputs = g_new (GnomeRROutputInfo *, num_on_outputs);
-        j = 0;
-        for (i = 0; outputs[i] != NULL; i++) {
-                if (gnome_rr_output_info_is_active (outputs[i])) {
-                        sorted_outputs[j] = outputs[i];
-                        j++;
-                }
-        }
-
-        qsort (sorted_outputs, num_on_outputs, sizeof (sorted_outputs[0]), compare_output_positions);
+        g_ptr_array_sort (sorted_outputs, compare_output_positions);
 
         /* Trim! */
 
         applicable = FALSE;
 
-        for (i = num_on_outputs - 1; i >= 0; i--) {
+        for (i = sorted_outputs->len - 1; i >= 0; i--) {
                 GError *error = NULL;
                 gboolean is_bounds_error;
 
@@ -1114,13 +1105,13 @@ trim_rightmost_outputs_that_dont_fit_in_framebuffer (GnomeRRScreen *rr_screen, G
                 if (!is_bounds_error)
                         break;
 
-                gnome_rr_output_info_set_active (sorted_outputs[i], FALSE);
+                gnome_rr_output_info_set_active (sorted_outputs->pdata[i], FALSE);
         }
 
         if (config_is_all_off (config))
                 applicable = FALSE;
 
-        g_free (sorted_outputs);
+        g_ptr_array_free (sorted_outputs, FALSE);
 
         return applicable;
 }
@@ -1338,15 +1329,10 @@ generate_fn_f7_configs (CsdXrandrManager *mgr)
 static void
 error_message (CsdXrandrManager *mgr, const char *primary_text, GError *error_to_display, const char *secondary_text)
 {
-        GtkWidget *dialog;
-
-        dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
-                                         "%s", primary_text);
-        gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s",
-                                                  error_to_display ? error_to_display->message : secondary_text);
-
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        g_warning("%s\n%s\n%s",
+              primary_text? primary_text : "",
+              secondary_text? secondary_text : "",
+              error_to_display? error_to_display->message : "");
 }
 
 static void
@@ -1438,7 +1424,7 @@ handle_fn_f7 (CsdXrandrManager *mgr, guint32 timestamp)
                 if (timestamp < server_timestamp)
                         timestamp = server_timestamp;
 
-                success = apply_configuration (mgr, priv->fn_f7_configs[mgr->priv->current_fn_f7_config], timestamp, TRUE, TRUE);
+                success = apply_configuration (mgr, priv->fn_f7_configs[mgr->priv->current_fn_f7_config], timestamp, TRUE);
 
                 if (success) {
                         log_msg ("Successfully switched to configuration (timestamp %u):\n", timestamp);
@@ -1583,7 +1569,8 @@ rotate_touchscreens (CsdXrandrManager *mgr,
                         continue;
                 }
 
-                if (device_info_is_touchscreen (&device_info[i])) {
+                if (device_info_is_touchscreen (&device_info[i]) ||
+                            device_info_is_tablet (&device_info[i])) {
                         XDevice *device;
                         gfloat *m = evdev_rotations[rot_idx].matrix;
                         PropertyHelper matrix = {
@@ -1615,7 +1602,7 @@ rotate_touchscreens (CsdXrandrManager *mgr,
                                          evdev_rotations[rot_idx].matrix[8]);
                         }
 
-                        XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), device);
+                        xdevice_close (device);
                 }
         }
         XFreeDeviceList (device_info);
@@ -1638,9 +1625,9 @@ handle_rotate_windows (CsdXrandrManager *mgr,
         int num_allowed_rotations;
         GnomeRRRotation allowed_rotations;
         GnomeRRRotation next_rotation;
-        gboolean success, show_error;
+        gboolean success;
 
-        g_debug ("Handling XF86RotateWindows");
+        g_debug ("Handling XF86RotateWindows with rotation %d", rotation);
 
         /* Which output? */
 
@@ -1662,17 +1649,15 @@ handle_rotate_windows (CsdXrandrManager *mgr,
                         g_debug ("No rotations are supported other than the current one; XF86RotateWindows key will do nothing");
                         goto out;
                 }
-                show_error = TRUE;
         } else {
                 next_rotation = rotation;
-                show_error = FALSE;
         }
 
         /* Rotate */
 
         gnome_rr_output_info_set_rotation (rotatable_output_info, next_rotation);
 
-        success = apply_configuration (mgr, current, timestamp, show_error, TRUE);
+        success = apply_configuration (mgr, current, timestamp, TRUE);
         if (success)
                 rotate_touchscreens (mgr, next_rotation);
 
@@ -1680,16 +1665,48 @@ out:
         g_object_unref (current);
 }
 
-static void
-auto_configure_outputs (CsdXrandrManager *manager, guint32 timestamp)
+static GnomeRRConfig *
+make_default_setup (CsdXrandrManager *manager)
 {
         CsdXrandrManagerPrivate *priv = manager->priv;
         GnomeRRConfig *config;
+        CsdXrandrBootBehaviour boot;
 
-        config = make_xinerama_setup (manager, priv->rw_screen);
+        boot = g_settings_get_enum (priv->settings, CONF_KEY_DEFAULT_MONITORS_SETUP);
+        g_debug ("xrandr default monitors setup: %d\n", boot);
+
+        switch (boot) {
+        case CSD_XRANDR_BOOT_BEHAVIOUR_DO_NOTHING:
+                config = make_xinerama_setup (manager, priv->rw_screen);
+                break;
+        case CSD_XRANDR_BOOT_BEHAVIOUR_FOLLOW_LID:
+                if (laptop_lid_is_closed (manager))
+                        config = make_other_setup (priv->rw_screen);
+                else
+                        config = make_xinerama_setup (manager, priv->rw_screen);
+                break;
+        case CSD_XRANDR_BOOT_BEHAVIOUR_CLONE:
+                config = make_clone_setup (manager, priv->rw_screen);
+                break;
+        case CSD_XRANDR_BOOT_BEHAVIOUR_DOCK:
+                config = make_other_setup (priv->rw_screen);
+                break;
+        default:
+                g_assert_not_reached ();
+        }
+
+        return config;
+}
+
+static void
+auto_configure_outputs (CsdXrandrManager *manager, guint32 timestamp)
+{
+        GnomeRRConfig *config;
+
+        g_debug ("xrandr auto-configure\n");
+        config = make_default_setup (manager);
         if (config) {
-                print_configuration (config, "auto-configure - xinerama mode");
-                apply_configuration (manager, config, timestamp, TRUE, FALSE);
+                apply_configuration (manager, config, timestamp, FALSE);
                 g_object_unref (config);
         } else {
                 g_debug ("No applicable configuration found during auto-configure");
@@ -1859,36 +1876,20 @@ static void
 apply_default_boot_configuration (CsdXrandrManager *mgr, guint32 timestamp)
 {
         CsdXrandrManagerPrivate *priv = mgr->priv;
-        GnomeRRScreen *screen = priv->rw_screen;
         GnomeRRConfig *config;
         CsdXrandrBootBehaviour boot;
 
         boot = g_settings_get_enum (priv->settings, CONF_KEY_DEFAULT_MONITORS_SETUP);
 
-        switch (boot) {
-        case CSD_XRANDR_BOOT_BEHAVIOUR_DO_NOTHING:
-                return;
-        case CSD_XRANDR_BOOT_BEHAVIOUR_FOLLOW_LID:
-                if (laptop_lid_is_closed (mgr))
-                        config = make_other_setup (screen);
-                else
-                        config = make_xinerama_setup (mgr, screen);
-                break;
-        case CSD_XRANDR_BOOT_BEHAVIOUR_CLONE:
-                config = make_clone_setup (mgr, screen);
-                break;
-        case CSD_XRANDR_BOOT_BEHAVIOUR_DOCK:
-                config = make_other_setup (screen);
-                break;
-        default:
-                g_assert_not_reached ();
-        }
+        if (boot == CSD_XRANDR_BOOT_BEHAVIOUR_DO_NOTHING)
+            return;
 
+        config = make_default_setup (mgr);
         if (config) {
                 /* We don't save the configuration (the "false" parameter to the following function) because we don't want to
                  * install a user-side setting when *here* we are using a system-default setting.
                  */
-                apply_configuration (mgr, config, timestamp, TRUE, FALSE);
+                apply_configuration (mgr, config, timestamp, FALSE);
                 g_object_unref (config);
         }
 }
@@ -1900,7 +1901,11 @@ apply_stored_configuration_at_startup (CsdXrandrManager *manager, guint32 timest
         gboolean success;
         char *backup_filename;
         char *intended_filename;
+        GnomePnpIds *pnp_ids;
 
+        /* This avoids the GnomePnpIds object being created multiple times.
+         * See c9240e8b69c5833074508b46bc56307aac12ec19 */
+        pnp_ids = gnome_pnp_ids_new ();
         backup_filename = gnome_rr_config_get_backup_filename ();
         intended_filename = gnome_rr_config_get_intended_filename ();
 
@@ -1940,6 +1945,7 @@ apply_stored_configuration_at_startup (CsdXrandrManager *manager, guint32 timest
         success = apply_intended_configuration (manager, intended_filename, timestamp);
 
 out:
+        g_object_unref (pnp_ids);
 
         if (my_error)
                 g_error_free (my_error);
@@ -1983,7 +1989,7 @@ turn_off_laptop_display (CsdXrandrManager *manager, guint32 timestamp)
                  * wouldn't want to restore a configuration with the laptop's display turned off, if at some
                  * point later the user booted his laptop with the lid open.
                  */
-                apply_configuration (manager, config, timestamp, FALSE, FALSE);
+                apply_configuration (manager, config, timestamp, FALSE);
         }
 
         g_object_unref (config);
