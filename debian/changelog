@@ -1,8 +1,8 @@
-cinnamon-settings-daemon (2.8.3-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (2.8.3-1) unstable; urgency=medium
 
   * New upstream release.
 
- -- Maximiliano Curia <maxy@debian.org>  Tue, 10 Nov 2015 15:43:06 +0100
+ -- Maximiliano Curia <maxy@debian.org>  Fri, 08 Jan 2016 20:19:40 +0100
 
 cinnamon-settings-daemon (2.6.3-2) unstable; urgency=medium
 
