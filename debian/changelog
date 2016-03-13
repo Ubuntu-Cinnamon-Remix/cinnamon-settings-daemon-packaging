@@ -1,3 +1,9 @@
+cinnamon-settings-daemon (2.8.4-1~) UNRELEASED; urgency=medium
+
+  * New upstream release.
+
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Sun, 13 Mar 2016 15:09:11 +0100
+
 cinnamon-settings-daemon (2.8.3-2) unstable; urgency=medium
 
   * Bump cinnamon-desktop build dependency.
