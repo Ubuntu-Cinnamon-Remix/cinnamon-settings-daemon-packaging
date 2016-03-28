@@ -1,5 +1,13 @@
+From: Debian Cinnamon Team <pkg-cinnamon-team@lists.alioth.debian.org>
+Date: Mon, 28 Mar 2016 11:56:35 +0200
+Subject: libsystemd
+
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/configure.ac b/configure.ac
-index 418f08f..16887af 100644
+index 7afbfbf..4b9b1de 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -373,7 +373,7 @@ dnl ====================================================================

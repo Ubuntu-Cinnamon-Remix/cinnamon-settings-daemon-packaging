@@ -1,1 +1,2 @@
 libsystemd.patch
+power-refresh-device-if-any-properties-changed.patch

@@ -1,0 +1,26 @@
+From: =?utf-8?q?Ball=C3=B3_Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Tue, 15 Mar 2016 23:38:59 +0100
+Subject: power: refresh device if any properties changed
+
+It's not enough to monitor state and warning-level.
+
+Fixes issue #111.
+---
+ plugins/power/csd-power-manager.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/plugins/power/csd-power-manager.c b/plugins/power/csd-power-manager.c
+index cc736cd..619f756 100644
+--- a/plugins/power/csd-power-manager.c
++++ b/plugins/power/csd-power-manager.c
+@@ -1015,9 +1015,7 @@ engine_device_add (CsdPowerManager *manager, UpDevice *device)
+ #if UP_CHECK_VERSION(0,99,0)
+         g_ptr_array_add (manager->priv->devices_array, g_object_ref(device));
+ 
+-        g_signal_connect (device, "notify::state",
+-                          G_CALLBACK (device_properties_changed_cb), manager);
+-        g_signal_connect (device, "notify::warning-level",
++        g_signal_connect (device, "notify",
+                           G_CALLBACK (device_properties_changed_cb), manager);
+ #endif
+ 
