@@ -35,7 +35,7 @@ Build-Depends: autotools-dev,
                libxklavier-dev,
                libxtst-dev,
                xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any]
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Homepage: http://cinnamon.linuxmint.com
 Vcs-Browser: https://anonscm.debian.org/git/pkg-cinnamon/cinnamon-settings-daemon.git
 Vcs-Git: https://anonscm.debian.org/git/pkg-cinnamon/cinnamon-settings-daemon.git
