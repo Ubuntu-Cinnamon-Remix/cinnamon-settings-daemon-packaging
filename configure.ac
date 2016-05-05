@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 
 AC_INIT([cinnamon-settings-daemon],
-        [2.8.4],
+        [3.0.0],
         [https://github.com/linuxmint/cinnamon-settings-daemon/issues])
 
 AC_CONFIG_SRCDIR([cinnamon-settings-daemon/cinnamon-settings-manager.c])
@@ -47,7 +47,7 @@ GLIB_REQUIRED_VERSION=2.37.3
 GTK_REQUIRED_VERSION=3.9.10
 GCONF_REQUIRED_VERSION=2.6.1
 GIO_REQUIRED_VERSION=2.26.0
-CINNAMON_DESKTOP_REQUIRED_VERSION=2.6.3
+CINNAMON_DESKTOP_REQUIRED_VERSION=2.8.0
 LIBNOTIFY_REQUIRED_VERSION=0.7.3
 UPOWER_GLIB_REQUIRED_VERSION=0.9.11
 PA_REQUIRED_VERSION=0.9.16
@@ -221,8 +221,7 @@ dnl ---------------------------------------------------------------------------
 dnl - media-keys plugin stuff
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(MEDIA_KEYS, [gio-unix-2.0 libpulse >= $PA_REQUIRED_VERSION $GUDEV_PKG libpulse-mainloop-glib >= $PA_REQUIRED_VERSION
-			       libcanberra libnotify cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION])
+PKG_CHECK_MODULES(MEDIA_KEYS, [gio-unix-2.0 libnotify libcanberra $GUDEV_PKG cvc >= $CINNAMON_DESKTOP_REQUIRED_VERSION cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION])
 
 dnl ---------------------------------------------------------------------------
 dnl - xrandr plugin stuff
@@ -373,7 +372,9 @@ dnl ====================================================================
 dnl Check for logind
 dnl ====================================================================
 
-PKG_CHECK_MODULES(LOGIND, [libsystemd-login], [have_logind=yes], [have_logind=no])
+PKG_CHECK_MODULES(LOGIND, [libsystemd-login], [have_logind=yes], [
+ PKG_CHECK_MODULES(LOGIND, [libsystemd], [have_logind=yes], [have_logind=no])
+])
 
 if test x$have_logind = xyes; then
     AC_DEFINE(HAVE_LOGIND, 1, [Define if logind is supported])
@@ -535,7 +536,6 @@ plugins/power/Makefile
 plugins/housekeeping/Makefile
 plugins/keyboard/Makefile
 plugins/media-keys/Makefile
-plugins/media-keys/cut-n-paste/Makefile
 plugins/mouse/Makefile
 plugins/orientation/Makefile
 plugins/print-notifications/Makefile
