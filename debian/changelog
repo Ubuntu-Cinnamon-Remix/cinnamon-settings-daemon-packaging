@@ -1,9 +1,13 @@
-cinnamon-settings-daemon (3.0.1-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (3.0.1-1) unstable; urgency=medium
 
   * New upstream release (3.0.0).
   * New upstream release (3.0.1).
+  * Add a .gitattributes file to use dpkg-mergechangelogs
+  * Bump Standards-Version to 3.9.8
+  * Dropping patches applied upstream
+  * Bump cinnamon-desktop build dependency
 
- -- Maximiliano Curia <maxy@debian.org>  Wed, 11 May 2016 17:12:21 +0200
+ -- Maximiliano Curia <maxy@debian.org>  Sun, 15 May 2016 10:09:31 +0200
 
 cinnamon-settings-daemon (2.8.4-2) unstable; urgency=medium
 
