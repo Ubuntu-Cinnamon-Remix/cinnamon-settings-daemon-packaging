@@ -1,3 +1,11 @@
+cinnamon-settings-daemon (3.0.1-2) unstable; urgency=medium
+
+  * Change the default touchpad scrolling to not be the "reverse" / "natural",
+    but the classic one instead. Thanks Christoph Anton Mitterer for reporting.
+    (Closes: #824428)
+
+ -- Margarita Manterola <marga@debian.org>  Mon, 16 May 2016 14:00:48 +0200
+
 cinnamon-settings-daemon (3.0.1-1) unstable; urgency=medium
 
   * New upstream release (3.0.0).
