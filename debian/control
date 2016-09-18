@@ -5,10 +5,11 @@ Maintainer: Debian Cinnamon Team <pkg-cinnamon-team@lists.alioth.debian.org>
 Uploaders: Maximiliano Curia <maxy@debian.org>,
            Margarita Manterola <marga@debian.org>,
            Fabio Fantoni <fantonifabio@tiscali.it>
-Build-Depends: autotools-dev,
+Build-Depends: autoconf-archive,
+               autotools-dev,
                debhelper (>= 9),
                dh-autoreconf,
-               gtk-doc-tools,
+               docbook-xsl,
                intltool (>= 0.37.1),
                libcanberra-gtk3-dev,
                libcinnamon-desktop-dev (>= 3),
@@ -34,7 +35,8 @@ Build-Depends: autotools-dev,
                libxi-dev,
                libxklavier-dev,
                libxtst-dev,
-               xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any]
+               xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any],
+               xsltproc
 Standards-Version: 3.9.8
 Homepage: http://cinnamon.linuxmint.com
 Vcs-Browser: https://anonscm.debian.org/git/pkg-cinnamon/cinnamon-settings-daemon.git
