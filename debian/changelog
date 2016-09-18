@@ -1,3 +1,15 @@
+cinnamon-settings-daemon (3.0.1-3~1.gbp4c0604) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @4c0604209afd7b6284b49493535778dac97346b5 **
+
+  * Add new patch: Migrate-away-from-gnome-common-deprecated-vars-and-macros.patch.
+    Thanks to biebl for reporting (Closes: 829904)
+  * Drop gtk-doc-tools build dependency.
+    Thanks to biebl for reporting (Closes: 837822)
+  * Update install files
+
+ -- Maximiliano Curia <maxy@gnuservers.com.ar>  Sun, 18 Sep 2016 13:59:12 +0200
+
 cinnamon-settings-daemon (3.0.1-2) unstable; urgency=medium
 
   * Change the default touchpad scrolling to not be the "reverse" / "natural",
