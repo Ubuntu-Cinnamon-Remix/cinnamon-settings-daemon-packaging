@@ -81,6 +81,6 @@ Depends:
  libglib2.0-dev (>= 2.26.0),
  ${misc:Depends},
  ${shlibs:Depends}
-Description: Headers for building applications communicating with cinnamon-settings-daemon
+Description: headers for building applications communicating with cinnamon-settings-daemon
  This package contains header files required to build applications that
  communicate with the Cinnamon settings daemon over D-Bus.
