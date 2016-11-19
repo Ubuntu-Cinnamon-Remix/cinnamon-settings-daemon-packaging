@@ -931,7 +931,7 @@ find_best_mode (GnomeRROutput *output)
         GnomeRRMode *preferred;
         GnomeRRMode **modes;
         int best_size;
-        int best_width, best_height, best_rate;
+        int best_rate;
         int i;
         GnomeRRMode *best_mode;
 
@@ -943,7 +943,7 @@ find_best_mode (GnomeRROutput *output)
         if (!modes)
                 return NULL;
 
-        best_size = best_width = best_height = best_rate = 0;
+        best_size = best_rate = 0;
         best_mode = NULL;
 
         for (i = 0; modes[i] != NULL; i++) {
@@ -958,8 +958,6 @@ find_best_mode (GnomeRROutput *output)
 
                 if (size > best_size) {
                         best_size   = size;
-                        best_width  = w;
-                        best_height = h;
                         best_rate   = r;
                         best_mode   = modes[i];
                 } else if (size == best_size) {
@@ -1529,7 +1527,6 @@ is_wacom_tablet_device (CsdXrandrManager *mgr,
         wacom_device = libwacom_new_from_path (priv->wacom_db, device_node, FALSE, NULL);
         g_free (device_node);
         if (wacom_device == NULL) {
-                g_free (device_node);
                 return FALSE;
         }
         is_tablet = libwacom_has_touch (wacom_device) &&
@@ -1657,7 +1654,7 @@ handle_rotate_windows (CsdXrandrManager *mgr,
 
         gnome_rr_output_info_set_rotation (rotatable_output_info, next_rotation);
 
-        success = apply_configuration (mgr, current, timestamp, TRUE);
+        success = apply_configuration (mgr, current, timestamp, FALSE);
         if (success)
                 rotate_touchscreens (mgr, next_rotation);
 
