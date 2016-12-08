@@ -2,7 +2,7 @@ debian/source_cinnamon-settings-daemon.py /usr/share/apport/package-hooks
 etc/dbus-1/system.d/org.cinnamon.SettingsDaemon.DateTimeMechanism.conf
 usr/lib/*/cinnamon-settings-daemon*/*.cinnamon-settings-plugin
 usr/lib/*/cinnamon-settings-daemon*/*.so
-usr/lib/*/cinnamon-settings-daemon*/liborientation.so.0*
+usr/lib/*/cinnamon-settings-daemon*/liborientation.so
 usr/lib/*/cinnamon-settings-daemon/
 usr/share/applications/cinnamon-settings-daemon.desktop
 usr/share/cinnamon-settings-daemon
