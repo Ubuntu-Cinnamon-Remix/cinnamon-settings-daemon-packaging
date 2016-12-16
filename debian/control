@@ -5,7 +5,7 @@ Maintainer: Debian Cinnamon Team <pkg-cinnamon-team@lists.alioth.debian.org>
 Uploaders:
  Maximiliano Curia <maxy@debian.org>,
  Margarita Manterola <marga@debian.org>,
- Fabio Fantoni <fantonifabio@tiscali.it>
+ Fabio Fantoni <fantonifabio@tiscali.it>,
 Build-Depends:
  autoconf-archive,
  autotools-dev,
@@ -37,8 +37,8 @@ Build-Depends:
  libxi-dev,
  libxklavier-dev,
  libxtst-dev,
- xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any],
- xsltproc
+ xsltproc,
+# xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any],
 Standards-Version: 3.9.8
 Homepage: http://cinnamon.linuxmint.com
 Vcs-Browser: https://anonscm.debian.org/git/pkg-cinnamon/cinnamon-settings-daemon.git
@@ -56,7 +56,7 @@ Breaks:
  gnome-session (<< 2.24),
  rhythmbox (<< 0.11.5),
  totem (<< 2.22.0),
- unity-greeter (<< 0.2.1-0ubuntu1)
+ unity-greeter (<< 0.2.1-0ubuntu1),
 Suggests: cinnamon-screensaver, muffin | x-window-manager, x11-xserver-utils
 Description: daemon handling the Cinnamon session settings
  This package contains the daemon which is responsible for setting the
@@ -80,7 +80,7 @@ Depends:
  libdbus-glib-1-dev (>= 0.74),
  libglib2.0-dev (>= 2.26.0),
  ${misc:Depends},
- ${shlibs:Depends}
+ ${shlibs:Depends},
 Description: headers for building applications communicating with cinnamon-settings-daemon
  This package contains header files required to build applications that
  communicate with the Cinnamon settings daemon over D-Bus.

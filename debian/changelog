@@ -7,6 +7,7 @@ cinnamon-settings-daemon (3.2.1-1~) UNRELEASED; urgency=medium
   * Drop upstream applied patches
   * Update install files
   * New upstream release (3.2.1).
+  * Disable unbuildable wacom plugin
 
  -- Maximiliano Curia <maxy@debian.org>  Fri, 16 Dec 2016 22:33:34 +0100
 
