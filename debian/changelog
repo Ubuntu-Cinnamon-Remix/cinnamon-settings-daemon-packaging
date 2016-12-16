@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (3.2.0-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (3.2.1-1~) UNRELEASED; urgency=medium
 
   [ Margarita Manterola ]
   * New upstream release.
@@ -6,8 +6,9 @@ cinnamon-settings-daemon (3.2.0-1~) UNRELEASED; urgency=medium
   [ Maximiliano Curia ]
   * Drop upstream applied patches
   * Update install files
+  * New upstream release (3.2.1).
 
- -- Margarita Manterola <marga@debian.org>  Sat, 19 Nov 2016 12:27:50 +0100
+ -- Maximiliano Curia <maxy@debian.org>  Fri, 16 Dec 2016 22:33:34 +0100
 
 cinnamon-settings-daemon (3.0.1-3) unstable; urgency=medium
 
