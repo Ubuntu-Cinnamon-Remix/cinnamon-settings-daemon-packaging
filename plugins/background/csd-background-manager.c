@@ -58,8 +58,6 @@ struct CsdBackgroundManagerPrivate
         guint        proxy_signal_id;
 };
 
-static void     csd_background_manager_class_init  (CsdBackgroundManagerClass *klass);
-static void     csd_background_manager_init        (CsdBackgroundManager      *background_manager);
 static void     csd_background_manager_finalize    (GObject             *object);
 
 static void setup_bg (CsdBackgroundManager *manager);
@@ -137,7 +135,9 @@ settings_change_event_cb (GSettings            *settings,
 {
         gnome_bg_load_from_preferences (manager->priv->bg,
                                         manager->priv->settings);
+#if ACCOUNTSERVICE_BG
         gnome_bg_set_accountsservice_background(gnome_bg_get_filename(manager->priv->bg));
+#endif
         return FALSE;
 }
 
