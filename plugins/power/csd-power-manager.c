@@ -64,9 +64,8 @@
 #define CSD_XRANDR_SETTINGS_SCHEMA              "org.cinnamon.settings-daemon.plugins.xrandr"
 #define CSD_SESSION_SETTINGS_SCHEMA             "org.cinnamon.desktop.session"
 
-#define CSD_DBUS_SERVICE                        "org.cinnamon.SettingsDaemon"
-#define CSD_DBUS_PATH                           "/org/cinnamon/SettingsDaemon"
-#define CSD_POWER_DBUS_PATH                     CSD_DBUS_PATH "/Power"
+#define CSD_POWER_DBUS_SERVICE                  "org.cinnamon.SettingsDaemon.Power"
+#define CSD_POWER_DBUS_PATH                     "/org/cinnamon/SettingsDaemon/Power"
 #define CSD_POWER_DBUS_INTERFACE                "org.cinnamon.SettingsDaemon.Power"
 #define CSD_POWER_DBUS_INTERFACE_SCREEN         "org.cinnamon.SettingsDaemon.Power.Screen"
 #define CSD_POWER_DBUS_INTERFACE_KEYBOARD       "org.cinnamon.SettingsDaemon.Power.Keyboard"
@@ -180,6 +179,7 @@ typedef enum {
 struct CsdPowerManagerPrivate
 {
         CinnamonSettingsSession    *session;
+        guint                    name_id;
         gboolean                 lid_is_closed;
         GSettings               *settings;
         GSettings               *settings_screensaver;
@@ -191,7 +191,7 @@ struct CsdPowerManagerPrivate
         GDBusConnection         *connection;
         GCancellable            *bus_cancellable;
         GDBusProxy              *upower_proxy;
-        GDBusProxy              *upower_kdb_proxy;
+        GDBusProxy              *upower_kbd_proxy;
         gboolean				backlight_helper_force;
         gchar*                  backlight_helper_preference_args;
         gint                     kbd_brightness_now;
@@ -240,8 +240,6 @@ enum {
         PROP_0,
 };
 
-static void     csd_power_manager_class_init  (CsdPowerManagerClass *klass);
-static void     csd_power_manager_init        (CsdPowerManager      *power_manager);
 static void     csd_power_manager_finalize    (GObject              *object);
 
 static UpDevice *engine_get_composite_device (CsdPowerManager *manager, UpDevice *original_device);
@@ -2029,7 +2027,7 @@ upower_kbd_get_percentage (CsdPowerManager *manager, GError **error)
 {
         GVariant *k_now = NULL;
 
-        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -2055,7 +2053,7 @@ upower_kbd_emit_changed (CsdPowerManager *manager)
         if (manager->priv->connection == NULL)
                 return;
         ret = g_dbus_connection_emit_signal (manager->priv->connection,
-                                             CSD_DBUS_SERVICE,
+                                             CSD_POWER_DBUS_SERVICE,
                                              CSD_POWER_DBUS_PATH,
                                              CSD_POWER_DBUS_INTERFACE_KEYBOARD,
                                              "Changed",
@@ -2077,7 +2075,7 @@ upower_kbd_set_brightness (CsdPowerManager *manager, guint value, GError **error
                 return TRUE;
 
         /* update h/w value */
-        retval = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        retval = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                          "SetBrightness",
                                          g_variant_new ("(i)", (gint) value),
                                          G_DBUS_CALL_FLAGS_NONE,
@@ -2273,7 +2271,7 @@ do_lid_open_action (CsdPowerManager *manager)
         }
 
         /* only toggle keyboard if present and already toggled off */
-        if (manager->priv->upower_kdb_proxy != NULL &&
+        if (manager->priv->upower_kbd_proxy != NULL &&
             manager->priv->kbd_brightness_old != -1) {
                 ret = upower_kbd_toggle (manager, &error);
                 if (!ret) {
@@ -2399,7 +2397,7 @@ suspend_with_lid_closed (CsdPowerManager *manager)
         }
 
         /* only toggle keyboard if present and not already toggled */
-        if (manager->priv->upower_kdb_proxy &&
+        if (manager->priv->upower_kbd_proxy &&
             manager->priv->kbd_brightness_old == -1) {
                 ret = upower_kbd_toggle (manager, &error);
                 if (!ret) {
@@ -2847,7 +2845,7 @@ backlight_emit_changed (CsdPowerManager *manager)
         if (manager->priv->connection == NULL)
                 return;
         ret = g_dbus_connection_emit_signal (manager->priv->connection,
-                                             CSD_DBUS_SERVICE,
+                                             CSD_POWER_DBUS_SERVICE,
                                              CSD_POWER_DBUS_PATH,
                                              CSD_POWER_DBUS_INTERFACE_SCREEN,
                                              "Changed",
@@ -3126,7 +3124,7 @@ kbd_backlight_dim (CsdPowerManager *manager,
         gint max;
         gint now;
 
-        if (manager->priv->upower_kdb_proxy == NULL)
+        if (manager->priv->upower_kbd_proxy == NULL)
                 return TRUE;
 
         now = manager->priv->kbd_brightness_now;
@@ -3231,7 +3229,7 @@ idle_set_mode (CsdPowerManager *manager, CsdPowerIdleMode mode)
                 }
 
                 /* only toggle keyboard if present and not already toggled */
-                if (manager->priv->upower_kdb_proxy &&
+                if (manager->priv->upower_kbd_proxy &&
                     manager->priv->kbd_brightness_old == -1) {
                         ret = upower_kbd_toggle (manager, &error);
                         if (!ret) {
@@ -3282,7 +3280,7 @@ idle_set_mode (CsdPowerManager *manager, CsdPowerIdleMode mode)
                 }
 
                 /* only toggle keyboard if present and already toggled off */
-                if (manager->priv->upower_kdb_proxy &&
+                if (manager->priv->upower_kbd_proxy &&
                     manager->priv->kbd_brightness_old != -1) {
                         ret = upower_kbd_toggle (manager, &error);
                         if (!ret) {
@@ -3634,15 +3632,15 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
         GError *error = NULL;
         CsdPowerManager *manager = CSD_POWER_MANAGER (user_data);
 
-        manager->priv->upower_kdb_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-        if (manager->priv->upower_kdb_proxy == NULL) {
+        manager->priv->upower_kbd_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
+        if (manager->priv->upower_kbd_proxy == NULL) {
                 g_warning ("Could not connect to UPower: %s",
                            error->message);
                 g_error_free (error);
                 goto out;
         }
 
-        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -3659,7 +3657,7 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
                 goto out;
         }
 
-        k_max = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_max = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetMaxBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -3672,7 +3670,7 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
                 goto out;
         }
 
-        g_signal_connect (manager->priv->upower_kdb_proxy, "g-signal", G_CALLBACK(upower_kbd_handle_changed), manager);
+        g_signal_connect (manager->priv->upower_kbd_proxy, "g-signal", G_CALLBACK(upower_kbd_handle_changed), manager);
 
         g_variant_get (k_now, "(i)", &manager->priv->kbd_brightness_now);
         g_variant_get (k_max, "(i)", &manager->priv->kbd_brightness_max);
@@ -4519,6 +4517,9 @@ csd_power_manager_finalize (GObject *object)
 
         g_return_if_fail (manager->priv != NULL);
 
+        if (manager->priv->name_id != 0)
+                g_bus_unown_name (manager->priv->name_id);
+
 
         G_OBJECT_CLASS (csd_power_manager_parent_class)->finalize (object);
 }
@@ -4677,7 +4678,7 @@ device_to_variant_blob (UpDevice *device)
         /* get an object path, even for the composite device */
         object_path = up_device_get_object_path (device);
         if (object_path == NULL)
-                object_path = CSD_DBUS_PATH;
+                object_path = CSD_POWER_DBUS_PATH;
 
         /* format complex object */
         value = g_variant_new ("(sssusdut)",
@@ -4859,6 +4860,14 @@ on_bus_gotten (GObject             *source_object,
                                                    NULL,
                                                    NULL);
         }
+
+        manager->priv->name_id = g_bus_own_name_on_connection (connection,
+                                                               CSD_POWER_DBUS_INTERFACE,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
 }
 
 static void

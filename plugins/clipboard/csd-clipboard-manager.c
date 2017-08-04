@@ -67,7 +67,7 @@ struct CsdClipboardManagerPrivate
 typedef struct
 {
         unsigned char *data;
-        int            length;
+        unsigned long  length;
         Atom           target;
         Atom           type;
         int            format;
@@ -83,8 +83,6 @@ typedef struct
         int         offset;
 } IncrConversion;
 
-static void     csd_clipboard_manager_class_init  (CsdClipboardManagerClass *klass);
-static void     csd_clipboard_manager_init        (CsdClipboardManager      *clipboard_manager);
 static void     csd_clipboard_manager_finalize    (GObject                  *object);
 
 static void     clipboard_manager_watch_cb        (CsdClipboardManager *manager,
@@ -474,17 +472,17 @@ convert_clipboard_manager (CsdClipboardManager *manager,
                 finish_selection_request (manager, xev, True);
         } else if (xev->xselectionrequest.target == XA_TARGETS) {
                 int  n_targets = 0;
-                Atom targets[3];
+                Atom tgets[3];
 
-                targets[n_targets++] = XA_TARGETS;
-                targets[n_targets++] = XA_TIMESTAMP;
-                targets[n_targets++] = XA_SAVE_TARGETS;
+                tgets[n_targets++] = XA_TARGETS;
+                tgets[n_targets++] = XA_TIMESTAMP;
+                tgets[n_targets++] = XA_SAVE_TARGETS;
 
                 XChangeProperty (manager->priv->display,
                                  xev->xselectionrequest.requestor,
                                  xev->xselectionrequest.property,
                                  XA_ATOM, 32, PropModeReplace,
-                                 (unsigned char *) targets, n_targets);
+                                 (unsigned char *) tgets, n_targets);
 
                 finish_selection_request (manager, xev, True);
         } else
@@ -596,9 +594,8 @@ convert_clipboard (CsdClipboardManager *manager,
         List           *conversions;
         IncrConversion *rdata;
         Atom            type;
-        int             i;
         int             format;
-        unsigned long   nitems;
+        unsigned long   i, nitems;
         unsigned long   remaining;
         Atom           *multiple;
 

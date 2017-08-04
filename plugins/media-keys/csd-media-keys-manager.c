@@ -63,19 +63,12 @@
 
 /* For media keys, we need to keep using org.gnome because
    that's what apps are looking for */
-#define GNOME_DBUS_PATH "/org/gnome/SettingsDaemon"
-#define GNOME_DBUS_NAME "org.gnome.SettingsDaemon"
-#define CSD_MEDIA_KEYS_DBUS_PATH GNOME_DBUS_PATH "/MediaKeys"
-#define CSD_MEDIA_KEYS_DBUS_NAME GNOME_DBUS_NAME ".MediaKeys"
+#define GSD_DBUS_NAME            "org.gnome.SettingsDaemon"
+#define CSD_MEDIA_KEYS_DBUS_PATH "/org/gnome/SettingsDaemon/MediaKeys"
+#define CSD_MEDIA_KEYS_DBUS_NAME "org.gnome.SettingsDaemon.MediaKeys"
 
-#define CINNAMON_DBUS_PATH "/org/cinnamon/SettingsDaemon"
-#define CINNAMON_DBUS_NAME "org.cinnamon.SettingsDaemon"
-
-#define CINNAMON_SHELL_DBUS_PATH "/org/Cinnamon"
-#define CINNAMON_SHELL_DBUS_NAME "org.Cinnamon"
-
-#define CINNAMON_KEYBINDINGS_PATH CINNAMON_DBUS_PATH "/KeybindingHandler"
-#define CINNAMON_KEYBINDINGS_NAME CINNAMON_DBUS_NAME ".KeybindingHandler"
+#define CINNAMON_KEYBINDINGS_PATH "/org/cinnamon/SettingsDaemon/KeybindingHandler"
+#define CINNAMON_KEYBINDINGS_NAME "org.cinnamon.SettingsDaemon.KeybindingHandler"
 
 #define GNOME_SESSION_DBUS_NAME "org.gnome.SessionManager"
 #define GNOME_SESSION_DBUS_PATH "/org/gnome/SessionManager"
@@ -140,6 +133,10 @@ typedef struct {
 
 struct CsdMediaKeysManagerPrivate
 {
+        /* dbus owned names */
+        guint           name_id;
+        guint           gnome_name_id;
+
         /* Volume bits */
         GvcMixerControl *volume;
         GvcMixerStream  *stream;
@@ -198,8 +195,6 @@ struct CsdMediaKeysManagerPrivate
         NotifyNotification *kb_backlight_notification;
 };
 
-static void     csd_media_keys_manager_class_init  (CsdMediaKeysManagerClass *klass);
-static void     csd_media_keys_manager_init        (CsdMediaKeysManager      *media_keys_manager);
 static void     csd_media_keys_manager_finalize    (GObject                  *object);
 static void     register_manager                   (CsdMediaKeysManager      *manager);
 static gboolean do_action (CsdMediaKeysManager *manager,
@@ -1345,7 +1340,7 @@ do_video_rotate_lock_action (CsdMediaKeysManager *manager,
         g_object_unref (settings);
 
         show_osd (manager, locked ? "rotation-locked-symbolic"
-                                  : "rotation-allowed-symbolic", NULL, -1);
+                                  : "rotation-allowed-symbolic", -1, OSD_ALL_OUTPUTS);
 }
 
 static void
@@ -1982,6 +1977,12 @@ csd_media_keys_manager_stop (CsdMediaKeysManager *manager)
                 priv->cancellable = NULL;
         }
 
+        if (priv->name_id != 0)
+                g_bus_unown_name (priv->name_id);
+
+        if (priv->gnome_name_id != 0)
+                g_bus_unown_name (priv->gnome_name_id);
+
         if (priv->introspection_data) {
                 g_dbus_node_info_unref (priv->introspection_data);
                 priv->introspection_data = NULL;
@@ -2284,6 +2285,14 @@ on_bus_gotten (GObject             *source_object,
                                            NULL,
                                            NULL);
 
+        manager->priv->gnome_name_id = g_bus_own_name_on_connection (connection,
+                                                               GSD_DBUS_NAME,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
+
         g_dbus_connection_register_object (connection,
                                            CINNAMON_KEYBINDINGS_PATH,
                                            manager->priv->kb_introspection_data->interfaces[0],
@@ -2292,10 +2301,18 @@ on_bus_gotten (GObject             *source_object,
                                            NULL,
                                            NULL);
 
+        manager->priv->name_id = g_bus_own_name_on_connection (connection,
+                                                               CINNAMON_KEYBINDINGS_NAME,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
+
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.XRANDR_2",
                           "/org/cinnamon/SettingsDaemon/XRANDR",
                           "org.cinnamon.SettingsDaemon.XRANDR_2",
                           NULL,
@@ -2305,7 +2322,7 @@ on_bus_gotten (GObject             *source_object,
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.Power",
                           "/org/cinnamon/SettingsDaemon/Power",
                           "org.cinnamon.SettingsDaemon.Power.Screen",
                           NULL,
@@ -2315,7 +2332,7 @@ on_bus_gotten (GObject             *source_object,
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.Power",
                           "/org/cinnamon/SettingsDaemon/Power",
                           "org.cinnamon.SettingsDaemon.Power.Keyboard",
                           NULL,
