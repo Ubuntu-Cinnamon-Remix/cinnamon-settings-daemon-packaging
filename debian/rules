@@ -14,18 +14,6 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 	    --libexecdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)/cinnamon-settings-daemon
 
-override_dh_link:
-	# Make *.links compatible with multiarch
-	for in_file in debian/*.links.in; do \
-	    out_file=$${in_file%.in}; \
-	    sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/' \
-		"$${in_file}" > "$${out_file}"; \
-	done
-	dh_link
-
-override_dh_install:
-	dh_install --list-missing
-
 override_dh_makeshlibs:
 	# Disabled, there are no shared libraries, but some plugins that cause this
 	# to fail
