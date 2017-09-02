@@ -1,9 +1,13 @@
-cinnamon-settings-daemon (3.4.4-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (3.4.4-1) unstable; urgency=medium
 
+  [ Fabio Fantoni ]
   * New upstream release (3.4.4).
   * Add missed libcvc-dev to build-deps.
 
- -- Fabio Fantoni <fantonifabio@tiscali.it>  Mon, 14 Aug 2017 10:30:26 +0200
+  [ Maximiliano Curia ]
+  * Release to unstable
+
+ -- Maximiliano Curia <maxy@debian.org>  Sat, 02 Sep 2017 07:35:27 +0200
 
 cinnamon-settings-daemon (3.4.2-1) experimental; urgency=medium
 
