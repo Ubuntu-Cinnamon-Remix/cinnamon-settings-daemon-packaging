@@ -1,3 +1,11 @@
+cinnamon-settings-daemon (3.4.4-2~) UNRELEASED; urgency=medium
+
+  * New revision
+  * Bump cinnamon-desktop build dep
+  * Drop obsolete link
+
+ -- Maximiliano Curia <maxy@debian.org>  Sat, 02 Sep 2017 21:10:31 +0200
+
 cinnamon-settings-daemon (3.4.4-1) unstable; urgency=medium
 
   [ Fabio Fantoni ]
