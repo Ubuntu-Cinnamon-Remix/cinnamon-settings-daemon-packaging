@@ -1,3 +1,11 @@
+cinnamon-settings-daemon (3.6.0-1~) UNRELEASED; urgency=medium
+
+  * New upstream release (3.6.0).
+  * Update install files.
+  * Bump group breaks (3.6).
+
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Wed, 01 Nov 2017 14:07:35 +0100
+
 cinnamon-settings-daemon (3.4.4-2) sid; urgency=medium
 
   * New revision
