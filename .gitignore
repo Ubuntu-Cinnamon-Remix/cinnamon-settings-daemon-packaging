@@ -1,5 +1,3 @@
-# Quilt patches
-.pc/
 INSTALL
 Makefile
 Makefile.in
