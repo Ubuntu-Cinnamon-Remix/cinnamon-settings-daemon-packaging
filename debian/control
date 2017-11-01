@@ -51,8 +51,8 @@ Recommends: pulseaudio
 Pre-Depends: ${misc:Pre-Depends}
 Breaks:
  banshee (<< 0.13.2+dfsg-7),
- cinnamon (<< 3.4),
- cinnamon-control-center (<< 3.4),
+ cinnamon (<< 3.6),
+ cinnamon-control-center (<< 3.6),
  gnome-color-manager (<< 3.0),
  gnome-screensaver (<< 2.28.0),
  gnome-session (<< 2.24),
