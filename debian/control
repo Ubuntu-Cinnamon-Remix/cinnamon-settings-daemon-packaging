@@ -47,7 +47,7 @@ Vcs-Git: https://anonscm.debian.org/git/pkg-cinnamon/cinnamon-settings-daemon.gi
 Package: cinnamon-settings-daemon
 Architecture: any
 Depends: cinnamon-desktop-data (>= 2.6.3), ${misc:Depends}, ${shlibs:Depends}
-Recommends: pulseaudio
+Recommends: cinnamon-l10n, pulseaudio
 Pre-Depends: ${misc:Pre-Depends}
 Breaks:
  banshee (<< 0.13.2+dfsg-7),
