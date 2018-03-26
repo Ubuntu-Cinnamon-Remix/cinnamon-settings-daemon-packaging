@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (3.6.2-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (3.6.2-1) unstable; urgency=medium
 
   [ Fabio Fantoni ]
   * New upstream release (3.6.0).
@@ -11,8 +11,11 @@ cinnamon-settings-daemon (3.6.2-1~) UNRELEASED; urgency=medium
   * Use the salsa canonical urls
   * Set new ml as Maintainer
   * New upstream release (3.6.2).
+  * Bump Standards-Version to 4.1.3.
+  * Bump debhelper build-dep and compat to 11.
+  * Release to unstable
 
- -- Maximiliano Curia <maxy@debian.org>  Mon, 26 Mar 2018 12:02:16 +0200
+ -- Maximiliano Curia <maxy@debian.org>  Mon, 26 Mar 2018 15:07:03 +0200
 
 cinnamon-settings-daemon (3.4.4-2) sid; urgency=medium
 
