@@ -10,7 +10,7 @@ Build-Depends:
  autoconf-archive,
  automake,
  autotools-dev,
- debhelper (>= 9),
+ debhelper (>= 11~),
  dh-autoreconf,
  docbook-xsl,
  intltool (>= 0.37.1),
