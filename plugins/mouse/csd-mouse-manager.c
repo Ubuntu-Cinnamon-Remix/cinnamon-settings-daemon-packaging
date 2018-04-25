@@ -114,34 +114,11 @@ G_DEFINE_TYPE (CsdMouseManager, csd_mouse_manager, G_TYPE_OBJECT)
 
 static gpointer manager_object = NULL;
 
-
-static GObject *
-csd_mouse_manager_constructor (GType                  type,
-                              guint                  n_construct_properties,
-                              GObjectConstructParam *construct_properties)
-{
-        CsdMouseManager      *mouse_manager;
-
-        mouse_manager = CSD_MOUSE_MANAGER (G_OBJECT_CLASS (csd_mouse_manager_parent_class)->constructor (type,
-                                                                                                      n_construct_properties,
-                                                                                                      construct_properties));
-
-        return G_OBJECT (mouse_manager);
-}
-
-static void
-csd_mouse_manager_dispose (GObject *object)
-{
-        G_OBJECT_CLASS (csd_mouse_manager_parent_class)->dispose (object);
-}
-
 static void
 csd_mouse_manager_class_init (CsdMouseManagerClass *klass)
 {
         GObjectClass   *object_class = G_OBJECT_CLASS (klass);
 
-        object_class->constructor = csd_mouse_manager_constructor;
-        object_class->dispose = csd_mouse_manager_dispose;
         object_class->finalize = csd_mouse_manager_finalize;
 
         g_type_class_add_private (klass, sizeof (CsdMouseManagerPrivate));
@@ -480,6 +457,7 @@ set_left_handed_legacy_driver (CsdMouseManager *manager,
                 left_handed = mouse_left_handed;
         }
 
+        gdk_error_trap_push ();
         n_buttons = XGetDeviceButtonMapping (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), xdevice,
                                              buttons,
                                              buttons_capacity);
@@ -496,7 +474,6 @@ set_left_handed_legacy_driver (CsdMouseManager *manager,
 
         configure_button_layout (buttons, n_buttons, left_handed);
 
-        gdk_error_trap_push ();
         XSetDeviceButtonMapping (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), xdevice, buttons, n_buttons);
         gdk_error_trap_pop_ignored ();
 
@@ -606,6 +583,8 @@ set_motion_legacy_driver (CsdMouseManager *manager,
                 motion_threshold = -1;
         }
 
+        gdk_error_trap_push ();
+
         /* Get the list of feedbacks for the device */
         states = XGetFeedbackControl (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), xdevice, &num_feedbacks);
         if (states == NULL)
@@ -633,6 +612,10 @@ set_motion_legacy_driver (CsdMouseManager *manager,
                 }
                 state = (XFeedbackState *) ((char *) state + state->length);
         }
+
+        if (gdk_error_trap_pop ())
+                g_warning ("Error setting acceleration on \"%s\"",
+                           gdk_device_get_name (device));
 
         XFreeFeedbackList (states);
 
@@ -1313,8 +1296,6 @@ set_mousetweaks_daemon (CsdMouseManager *manager,
 
         if (! g_spawn_command_line_async (comm, &error)) {
                 if (error->code == G_SPAWN_ERROR_NOENT && run_daemon) {
-                        GtkWidget *dialog;
-
                         if (dwell_click_enabled) {
                                 g_settings_set_boolean (manager->priv->mouse_a11y_settings,
                                                         KEY_DWELL_CLICK_ENABLED, FALSE);
@@ -1322,19 +1303,7 @@ set_mousetweaks_daemon (CsdMouseManager *manager,
                                 g_settings_set_boolean (manager->priv->mouse_a11y_settings,
                                                         KEY_SECONDARY_CLICK_ENABLED, FALSE);
                         }
-
-                        dialog = gtk_message_dialog_new (NULL, 0,
-                                                         GTK_MESSAGE_WARNING,
-                                                         GTK_BUTTONS_OK,
-                                                         _("Could not enable mouse accessibility features"));
-                        gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                                                  _("Mouse accessibility requires Mousetweaks "
-                                                                    "to be installed on your system."));
-                        gtk_window_set_title (GTK_WINDOW (dialog), _("Universal Access"));
-                        gtk_window_set_icon_name (GTK_WINDOW (dialog),
-                                                  "preferences-desktop-accessibility");
-                        gtk_dialog_run (GTK_DIALOG (dialog));
-                        gtk_widget_destroy (dialog);
+                        g_warning("Error enabling mouse accessibility features (mousetweaks is not installed)");
                 }
                 g_error_free (error);
         }
@@ -1504,6 +1473,14 @@ mouse_callback (GSettings       *settings,
         g_list_free (devices);
 }
 
+/* Re-enable touchpad when any other pointing device isn't present. */
+static void
+ensure_touchpad_active (CsdMouseManager *manager)
+{
+        if (mouse_is_present () == FALSE && touchscreen_is_present () == FALSE && touchpad_is_present ())
+                g_settings_set_boolean (manager->priv->touchpad_settings, KEY_TOUCHPAD_ENABLED, TRUE);
+}
+
 static void
 touchpad_callback (GSettings       *settings,
                    const gchar     *key,
@@ -1608,6 +1585,7 @@ device_removed_cb (GdkDeviceManager *device_manager,
 
                 /* If a touchpad was to disappear... */
                 set_disable_w_typing (manager, g_settings_get_boolean (manager->priv->touchpad_settings, KEY_TOUCHPAD_DISABLE_W_TYPING));
+                ensure_touchpad_active (manager);
         }
 }
 
@@ -1679,9 +1657,11 @@ csd_mouse_manager_idle_cb (CsdMouseManager *manager)
         }
         g_list_free (devices);
 
+        ensure_touchpad_active (manager);
+
         if (g_settings_get_boolean (manager->priv->touchpad_settings, KEY_TOUCHPAD_ENABLED)) {
                 devices = get_disabled_devices (manager->priv->device_manager);
-                for (l = devices; l != NULL; l = l->next) {
+               for (l = devices; l != NULL; l = l->next) {
                         int device_id;
 
                         device_id = GPOINTER_TO_INT (l->data);
@@ -1722,26 +1702,20 @@ csd_mouse_manager_stop (CsdMouseManager *manager)
 
         g_debug ("Stopping mouse manager");
 
+        if (manager->priv->start_idle_id != 0) {
+                g_source_remove (manager->priv->start_idle_id);
+                manager->priv->start_idle_id = 0;
+        }
+
         if (p->device_manager != NULL) {
                 g_signal_handler_disconnect (p->device_manager, p->device_added_id);
                 g_signal_handler_disconnect (p->device_manager, p->device_removed_id);
                 p->device_manager = NULL;
         }
 
-        if (p->mouse_a11y_settings != NULL) {
-                g_object_unref (p->mouse_a11y_settings);
-                p->mouse_a11y_settings = NULL;
-        }
-
-        if (p->mouse_settings != NULL) {
-                g_object_unref (p->mouse_settings);
-                p->mouse_settings = NULL;
-        }
-
-        if (p->touchpad_settings != NULL) {
-                g_object_unref (p->touchpad_settings);
-                p->touchpad_settings = NULL;
-        }
+        g_clear_object (&p->mouse_a11y_settings);
+        g_clear_object (&p->mouse_settings);
+        g_clear_object (&p->touchpad_settings);
 
         set_locate_pointer (manager, FALSE);
 }
@@ -1758,27 +1732,7 @@ csd_mouse_manager_finalize (GObject *object)
 
         g_return_if_fail (mouse_manager->priv != NULL);
 
-        if (mouse_manager->priv->blacklist != NULL)
-                g_hash_table_destroy (mouse_manager->priv->blacklist);
-
-        if (mouse_manager->priv->start_idle_id != 0) {
-            g_source_remove (mouse_manager->priv->start_idle_id);
-            mouse_manager->priv->start_idle_id = 0;
-        }
-
-        if (mouse_manager->priv->device_manager != NULL) {
-                g_signal_handler_disconnect (mouse_manager->priv->device_manager, mouse_manager->priv->device_added_id);
-                g_signal_handler_disconnect (mouse_manager->priv->device_manager, mouse_manager->priv->device_removed_id);
-        }
-
-        if (mouse_manager->priv->mouse_settings != NULL)
-                g_object_unref (mouse_manager->priv->mouse_settings);
-
-        if (mouse_manager->priv->mouse_a11y_settings != NULL)
-                g_object_unref (mouse_manager->priv->mouse_a11y_settings);
-
-        if (mouse_manager->priv->touchpad_settings != NULL)
-                g_object_unref (mouse_manager->priv->touchpad_settings);
+        csd_mouse_manager_stop (mouse_manager);
 
         G_OBJECT_CLASS (csd_mouse_manager_parent_class)->finalize (object);
 }
