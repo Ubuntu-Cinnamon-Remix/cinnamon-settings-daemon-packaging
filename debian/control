@@ -9,7 +9,6 @@ Uploaders:
 Build-Depends:
  autoconf-archive,
  automake,
- autotools-dev,
  debhelper (>= 11.1~),
  docbook-xsl,
  intltool (>= 0.37.1),
