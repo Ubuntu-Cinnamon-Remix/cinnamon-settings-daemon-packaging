@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 
 AC_INIT([cinnamon-settings-daemon],
-        [3.6.2],
+        [3.8.0],
         [https://github.com/linuxmint/cinnamon-settings-daemon/issues])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -183,7 +183,6 @@ dnl - background
 dnl ---------------------------------------------------------------------------
 
 PKG_CHECK_MODULES(BACKGROUND, x11 cinnamon-desktop >= $CINNAMON_DESKTOP_REQUIRED_VERSION)
-AC_SEARCH_LIBS(gnome_bg_set_accountsservice_background, cinnamon-desktop, AC_DEFINE([ACCOUNTSERVICE_BG],1, [Build with accountsservice background support]))
 
 dnl ---------------------------------------------------------------------------
 dnl - mouse

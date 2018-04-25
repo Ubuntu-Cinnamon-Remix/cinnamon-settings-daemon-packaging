@@ -229,6 +229,7 @@ struct CsdPowerManagerPrivate
 
         /* logind stuff */
         GDBusProxy              *logind_proxy;
+        gboolean                 inhibit_lid_switch_enabled;
         gint                     inhibit_lid_switch_fd;
         gboolean                 inhibit_lid_switch_taken;
         gint                     inhibit_suspend_fd;
@@ -3516,29 +3517,21 @@ csd_power_manager_class_init (CsdPowerManagerClass *klass)
 }
 
 static void
-sleep_cb_screensaver_proxy_ready_cb (GObject *source_object,
-                            GAsyncResult *res,
-                            gpointer user_data)
+lock_screensaver (CsdPowerManager *manager)
 {
-        GError *error = NULL;
-        CsdPowerManager *manager = CSD_POWER_MANAGER (user_data);
+    GError *error;
+    gboolean ret;
 
-        manager->priv->screensaver_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-        if (manager->priv->screensaver_proxy == NULL) {
-                g_warning ("Could not connect to cinnamon-screensaver: %s",
-                           error->message);
-                g_error_free (error);
-                return;
-        }
+    g_debug ("Locking screen before sleep/hibernate");
 
-        /* Finish the upower_notify_sleep_cb() call by locking the screen */
-        g_debug ("cinnamon-screensaver activated, doing cinnamon-screensaver lock");
-        g_dbus_proxy_call (manager->priv->screensaver_proxy,
-                           "Lock",
-                           g_variant_new("(s)", ""),
-                           G_DBUS_CALL_FLAGS_NONE, -1,
-                           NULL, NULL, NULL);
+    /* do this sync to ensure it's on the screen when we start suspending */
+    error = NULL;
+    ret = g_spawn_command_line_sync ("cinnamon-screensaver-command --lock", NULL, NULL, NULL, &error);
 
+    if (!ret) {
+        g_warning ("Couldn't lock screen: %s", error->message);
+        g_error_free (error);
+    }
 }
 
 static void
@@ -3694,28 +3687,6 @@ out:
                 g_variant_unref (k_now);
         if (k_max != NULL)
                 g_variant_unref (k_max);
-}
-
-static void
-lock_screensaver (CsdPowerManager *manager)
-{
-        gboolean do_lock;
-
-        do_lock = g_settings_get_boolean (manager->priv->settings_screensaver,
-                                          "lock-enabled");
-        if (!do_lock)
-                return;
-
-        /* connect to the screensaver first */
-        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                                  G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                  NULL,
-                                  GS_DBUS_NAME,
-                                  GS_DBUS_PATH,
-                                  GS_DBUS_INTERFACE,
-                                  NULL,
-                                  sleep_cb_screensaver_proxy_ready_cb,
-                                  manager);
 }
 
 static void
@@ -3888,6 +3859,13 @@ inhibit_lid_switch_done (GObject      *source,
 static void
 inhibit_lid_switch (CsdPowerManager *manager)
 {
+        if (!manager->priv->inhibit_lid_switch_enabled)  {
+                // The users asks us not to interfere with what logind does
+                // w.r.t. handling the lid switch
+                g_debug ("inhibiting lid-switch disabled");
+                return;
+        }
+
         GVariant *params;
 
         if (manager->priv->inhibit_lid_switch_taken) {
@@ -4004,16 +3982,10 @@ handle_suspend_actions (CsdPowerManager *manager)
 
         do_lock = g_settings_get_boolean (manager->priv->settings,
                                           "lock-on-suspend");
-        if (do_lock)
-                g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                                          G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                          NULL,
-                                          GS_DBUS_NAME,
-                                          GS_DBUS_PATH,
-                                          GS_DBUS_INTERFACE,
-                                          NULL,
-                                          sleep_cb_screensaver_proxy_ready_cb,
-                                          manager);
+
+        if (do_lock) {
+            lock_screensaver (manager);
+        }
 
         /* lift the delay inhibit, so logind can proceed */
         uninhibit_suspend (manager);
@@ -4194,6 +4166,8 @@ csd_power_manager_start (CsdPowerManager *manager,
         manager->priv->settings_xrandr = g_settings_new (CSD_XRANDR_SETTINGS_SCHEMA);
         manager->priv->settings_session = g_settings_new (CSD_SESSION_SETTINGS_SCHEMA);
         manager->priv->use_logind = g_settings_get_boolean (manager->priv->settings_session, "settings-daemon-uses-logind");
+        manager->priv->inhibit_lid_switch_enabled =
+                          g_settings_get_boolean (manager->priv->settings, "inhibit-lid-switch");
 
         manager->priv->up_client = up_client_new ();
 #if ! UP_CHECK_VERSION(0,99,0)
