@@ -1,14 +1,14 @@
-cinnamon-settings-daemon (3.6.2-2~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (3.8.0-1~) UNRELEASED; urgency=medium
 
   [ Maximiliano Curia ]
   * Drop dh-autoreconf (no longer needed with dh >= 10)
   * Drop dh's parallel arg (no longer needed with dh >= 10)
-  * Add patch: Update-gnome-power-manager-stats-desktop-name
   * Add Suggests to the default associated programs.
     Thanks to Simon McVittie (Closes: 895481)
 
   [ Fabio Fantoni ]
   * Update debian/copyright
+  * New upstream release (3.8.0).
 
  -- Maximiliano Curia <maxy@debian.org>  Thu, 12 Apr 2018 13:16:25 +0200
 
