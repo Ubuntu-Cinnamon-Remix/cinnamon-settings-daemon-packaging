@@ -28,3 +28,9 @@ override_dh_clean:
 		rm -f "$${out_file}"; \
 	done
 	dh_clean
+
+# --list-missing will be default in compat 12
+override_dh_missing:
+	dh_missing --list-missing
+
+
