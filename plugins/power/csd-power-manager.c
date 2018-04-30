@@ -64,9 +64,8 @@
 #define CSD_XRANDR_SETTINGS_SCHEMA              "org.cinnamon.settings-daemon.plugins.xrandr"
 #define CSD_SESSION_SETTINGS_SCHEMA             "org.cinnamon.desktop.session"
 
-#define CSD_DBUS_SERVICE                        "org.cinnamon.SettingsDaemon"
-#define CSD_DBUS_PATH                           "/org/cinnamon/SettingsDaemon"
-#define CSD_POWER_DBUS_PATH                     CSD_DBUS_PATH "/Power"
+#define CSD_POWER_DBUS_SERVICE                  "org.cinnamon.SettingsDaemon.Power"
+#define CSD_POWER_DBUS_PATH                     "/org/cinnamon/SettingsDaemon/Power"
 #define CSD_POWER_DBUS_INTERFACE                "org.cinnamon.SettingsDaemon.Power"
 #define CSD_POWER_DBUS_INTERFACE_SCREEN         "org.cinnamon.SettingsDaemon.Power.Screen"
 #define CSD_POWER_DBUS_INTERFACE_KEYBOARD       "org.cinnamon.SettingsDaemon.Power.Keyboard"
@@ -115,9 +114,11 @@ static const gchar introspection_xml[] =
 "  <interface name='org.cinnamon.SettingsDaemon.Power.Screen'>"
 "    <method name='StepUp'>"
 "      <arg type='u' name='new_percentage' direction='out'/>"
+"      <arg type='i' name='output_id' direction='out'/>"
 "    </method>"
 "    <method name='StepDown'>"
 "      <arg type='u' name='new_percentage' direction='out'/>"
+"      <arg type='i' name='output_id' direction='out'/>"
 "    </method>"
 "    <method name='GetPercentage'>"
 "      <arg type='u' name='percentage' direction='out'/>"
@@ -178,6 +179,7 @@ typedef enum {
 struct CsdPowerManagerPrivate
 {
         CinnamonSettingsSession    *session;
+        guint                    name_id;
         gboolean                 lid_is_closed;
         GSettings               *settings;
         GSettings               *settings_screensaver;
@@ -189,7 +191,7 @@ struct CsdPowerManagerPrivate
         GDBusConnection         *connection;
         GCancellable            *bus_cancellable;
         GDBusProxy              *upower_proxy;
-        GDBusProxy              *upower_kdb_proxy;
+        GDBusProxy              *upower_kbd_proxy;
         gboolean				backlight_helper_force;
         gchar*                  backlight_helper_preference_args;
         gint                     kbd_brightness_now;
@@ -227,6 +229,7 @@ struct CsdPowerManagerPrivate
 
         /* logind stuff */
         GDBusProxy              *logind_proxy;
+        gboolean                 inhibit_lid_switch_enabled;
         gint                     inhibit_lid_switch_fd;
         gboolean                 inhibit_lid_switch_taken;
         gint                     inhibit_suspend_fd;
@@ -238,8 +241,6 @@ enum {
         PROP_0,
 };
 
-static void     csd_power_manager_class_init  (CsdPowerManagerClass *klass);
-static void     csd_power_manager_init        (CsdPowerManager      *power_manager);
 static void     csd_power_manager_finalize    (GObject              *object);
 
 static UpDevice *engine_get_composite_device (CsdPowerManager *manager, UpDevice *original_device);
@@ -254,6 +255,8 @@ static void      inhibit_lid_switch (CsdPowerManager *manager);
 static void      uninhibit_lid_switch (CsdPowerManager *manager);
 static void      lock_screensaver (CsdPowerManager *manager);
 static void      kill_lid_close_safety_timer (CsdPowerManager *manager);
+
+int             backlight_get_output_id (CsdPowerManager *manager);
 
 #if UP_CHECK_VERSION(0,99,0)
 static void device_properties_changed_cb (UpDevice *device, GParamSpec *pspec, CsdPowerManager *manager);
@@ -1015,9 +1018,7 @@ engine_device_add (CsdPowerManager *manager, UpDevice *device)
 #if UP_CHECK_VERSION(0,99,0)
         g_ptr_array_add (manager->priv->devices_array, g_object_ref(device));
 
-        g_signal_connect (device, "notify::state",
-                          G_CALLBACK (device_properties_changed_cb), manager);
-        g_signal_connect (device, "notify::warning-level",
+        g_signal_connect (device, "notify",
                           G_CALLBACK (device_properties_changed_cb), manager);
 #endif
 
@@ -1084,6 +1085,7 @@ engine_device_removed_cb (UpClient *client, const char *object_path, CsdPowerMan
                         break;
                 }
         }
+        engine_recalculate_state (manager);
 #else
 engine_device_removed_cb (UpClient *client, UpDevice *device, CsdPowerManager *manager)
 {
@@ -2024,10 +2026,9 @@ do_power_action_type (CsdPowerManager *manager,
 static gboolean
 upower_kbd_get_percentage (CsdPowerManager *manager, GError **error)
 {
-        gint value = -1;
         GVariant *k_now = NULL;
 
-        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -2053,7 +2054,7 @@ upower_kbd_emit_changed (CsdPowerManager *manager)
         if (manager->priv->connection == NULL)
                 return;
         ret = g_dbus_connection_emit_signal (manager->priv->connection,
-                                             CSD_DBUS_SERVICE,
+                                             CSD_POWER_DBUS_SERVICE,
                                              CSD_POWER_DBUS_PATH,
                                              CSD_POWER_DBUS_INTERFACE_KEYBOARD,
                                              "Changed",
@@ -2075,7 +2076,7 @@ upower_kbd_set_brightness (CsdPowerManager *manager, guint value, GError **error
                 return TRUE;
 
         /* update h/w value */
-        retval = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        retval = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                          "SetBrightness",
                                          g_variant_new ("(i)", (gint) value),
                                          G_DBUS_CALL_FLAGS_NONE,
@@ -2271,7 +2272,7 @@ do_lid_open_action (CsdPowerManager *manager)
         }
 
         /* only toggle keyboard if present and already toggled off */
-        if (manager->priv->upower_kdb_proxy != NULL &&
+        if (manager->priv->upower_kbd_proxy != NULL &&
             manager->priv->kbd_brightness_old != -1) {
                 ret = upower_kbd_toggle (manager, &error);
                 if (!ret) {
@@ -2397,7 +2398,7 @@ suspend_with_lid_closed (CsdPowerManager *manager)
         }
 
         /* only toggle keyboard if present and not already toggled */
-        if (manager->priv->upower_kdb_proxy &&
+        if (manager->priv->upower_kbd_proxy &&
             manager->priv->kbd_brightness_old == -1) {
                 ret = upower_kbd_toggle (manager, &error);
                 if (!ret) {
@@ -2695,6 +2696,41 @@ out:
         return ret;
 }
 
+int
+backlight_get_output_id (CsdPowerManager *manager)
+{
+        GnomeRROutput *output = NULL;
+        GnomeRROutput **outputs;
+        GnomeRRCrtc *crtc;
+        GdkScreen *gdk_screen;
+        gint x, y;
+        guint i;
+
+        outputs = gnome_rr_screen_list_outputs (manager->priv->x11_screen);
+        if (outputs == NULL)
+                return -1;
+
+        for (i = 0; outputs[i] != NULL; i++) {
+                if (gnome_rr_output_is_connected (outputs[i]) &&
+                    gnome_rr_output_is_laptop (outputs[i])) {
+                        output = outputs[i];
+                        break;
+                }
+        }
+
+        if (output == NULL)
+                return -1;
+
+        crtc = gnome_rr_output_get_crtc (output);
+        if (crtc == NULL)
+                return -1;
+
+        gdk_screen = gdk_screen_get_default ();
+        gnome_rr_crtc_get_position (crtc, &x, &y);
+
+        return gdk_screen_get_monitor_at_point (gdk_screen, x, y);
+}
+
 static gint
 backlight_get_abs (CsdPowerManager *manager, GError **error)
 {
@@ -2810,7 +2846,7 @@ backlight_emit_changed (CsdPowerManager *manager)
         if (manager->priv->connection == NULL)
                 return;
         ret = g_dbus_connection_emit_signal (manager->priv->connection,
-                                             CSD_DBUS_SERVICE,
+                                             CSD_POWER_DBUS_SERVICE,
                                              CSD_POWER_DBUS_PATH,
                                              CSD_POWER_DBUS_INTERFACE_SCREEN,
                                              "Changed",
@@ -3089,7 +3125,7 @@ kbd_backlight_dim (CsdPowerManager *manager,
         gint max;
         gint now;
 
-        if (manager->priv->upower_kdb_proxy == NULL)
+        if (manager->priv->upower_kbd_proxy == NULL)
                 return TRUE;
 
         now = manager->priv->kbd_brightness_now;
@@ -3194,7 +3230,7 @@ idle_set_mode (CsdPowerManager *manager, CsdPowerIdleMode mode)
                 }
 
                 /* only toggle keyboard if present and not already toggled */
-                if (manager->priv->upower_kdb_proxy &&
+                if (manager->priv->upower_kbd_proxy &&
                     manager->priv->kbd_brightness_old == -1) {
                         ret = upower_kbd_toggle (manager, &error);
                         if (!ret) {
@@ -3245,7 +3281,7 @@ idle_set_mode (CsdPowerManager *manager, CsdPowerIdleMode mode)
                 }
 
                 /* only toggle keyboard if present and already toggled off */
-                if (manager->priv->upower_kdb_proxy &&
+                if (manager->priv->upower_kbd_proxy &&
                     manager->priv->kbd_brightness_old != -1) {
                         ret = upower_kbd_toggle (manager, &error);
                         if (!ret) {
@@ -3281,7 +3317,7 @@ idle_is_session_inhibited (CsdPowerManager *manager, guint mask)
 
         /* not yet connected to cinnamon-session */
         if (manager->priv->session_proxy == NULL) {
-                g_warning ("session inhibition not available, cinnamon-session is not available");
+                g_debug ("session inhibition not available, cinnamon-session is not available");
                 return FALSE;
         }
 
@@ -3445,6 +3481,8 @@ idle_configure (CsdPowerManager *manager)
                                            CSD_POWER_IDLETIME_BLANK_ID);
         }
 
+        gboolean is_sleep_inhibited = idle_is_session_inhibited (manager,
+                                                                 SESSION_INHIBIT_MASK_SUSPEND);
         /* only do the sleep timeout when the session is idle
          * and we aren't inhibited from sleeping */
         if (on_battery) {
@@ -3454,7 +3492,7 @@ idle_configure (CsdPowerManager *manager)
                 timeout_sleep = g_settings_get_int (manager->priv->settings,
                                                     "sleep-inactive-ac-timeout");
         }
-        if (timeout_sleep != 0) {
+        if (!is_sleep_inhibited && timeout_sleep != 0) {
                 g_debug ("setting up sleep callback %is", timeout_sleep);
 
                 gpm_idletime_alarm_set (manager->priv->idletime,
@@ -3479,29 +3517,21 @@ csd_power_manager_class_init (CsdPowerManagerClass *klass)
 }
 
 static void
-sleep_cb_screensaver_proxy_ready_cb (GObject *source_object,
-                            GAsyncResult *res,
-                            gpointer user_data)
+lock_screensaver (CsdPowerManager *manager)
 {
-        GError *error = NULL;
-        CsdPowerManager *manager = CSD_POWER_MANAGER (user_data);
+    GError *error;
+    gboolean ret;
 
-        manager->priv->screensaver_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-        if (manager->priv->screensaver_proxy == NULL) {
-                g_warning ("Could not connect to cinnamon-screensaver: %s",
-                           error->message);
-                g_error_free (error);
-                return;
-        }
+    g_debug ("Locking screen before sleep/hibernate");
 
-        /* Finish the upower_notify_sleep_cb() call by locking the screen */
-        g_debug ("cinnamon-screensaver activated, doing cinnamon-screensaver lock");
-        g_dbus_proxy_call (manager->priv->screensaver_proxy,
-                           "Lock",
-                           g_variant_new("(s)", ""),
-                           G_DBUS_CALL_FLAGS_NONE, -1,
-                           NULL, NULL, NULL);
+    /* do this sync to ensure it's on the screen when we start suspending */
+    error = NULL;
+    ret = g_spawn_command_line_sync ("cinnamon-screensaver-command --lock", NULL, NULL, NULL, &error);
 
+    if (!ret) {
+        g_warning ("Couldn't lock screen: %s", error->message);
+        g_error_free (error);
+    }
 }
 
 static void
@@ -3595,15 +3625,15 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
         GError *error = NULL;
         CsdPowerManager *manager = CSD_POWER_MANAGER (user_data);
 
-        manager->priv->upower_kdb_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-        if (manager->priv->upower_kdb_proxy == NULL) {
+        manager->priv->upower_kbd_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
+        if (manager->priv->upower_kbd_proxy == NULL) {
                 g_warning ("Could not connect to UPower: %s",
                            error->message);
                 g_error_free (error);
                 goto out;
         }
 
-        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_now = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -3620,7 +3650,7 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
                 goto out;
         }
 
-        k_max = g_dbus_proxy_call_sync (manager->priv->upower_kdb_proxy,
+        k_max = g_dbus_proxy_call_sync (manager->priv->upower_kbd_proxy,
                                         "GetMaxBrightness",
                                         NULL,
                                         G_DBUS_CALL_FLAGS_NONE,
@@ -3633,7 +3663,7 @@ power_keyboard_proxy_ready_cb (GObject             *source_object,
                 goto out;
         }
 
-        g_signal_connect (manager->priv->upower_kdb_proxy, "g-signal", G_CALLBACK(upower_kbd_handle_changed), manager);
+        g_signal_connect (manager->priv->upower_kbd_proxy, "g-signal", G_CALLBACK(upower_kbd_handle_changed), manager);
 
         g_variant_get (k_now, "(i)", &manager->priv->kbd_brightness_now);
         g_variant_get (k_max, "(i)", &manager->priv->kbd_brightness_max);
@@ -3657,28 +3687,6 @@ out:
                 g_variant_unref (k_now);
         if (k_max != NULL)
                 g_variant_unref (k_max);
-}
-
-static void
-lock_screensaver (CsdPowerManager *manager)
-{
-        gboolean do_lock;
-
-        do_lock = g_settings_get_boolean (manager->priv->settings_screensaver,
-                                          "lock-enabled");
-        if (!do_lock)
-                return;
-
-        /* connect to the screensaver first */
-        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                                  G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                  NULL,
-                                  GS_DBUS_NAME,
-                                  GS_DBUS_PATH,
-                                  GS_DBUS_INTERFACE,
-                                  NULL,
-                                  sleep_cb_screensaver_proxy_ready_cb,
-                                  manager);
 }
 
 static void
@@ -3851,6 +3859,13 @@ inhibit_lid_switch_done (GObject      *source,
 static void
 inhibit_lid_switch (CsdPowerManager *manager)
 {
+        if (!manager->priv->inhibit_lid_switch_enabled)  {
+                // The users asks us not to interfere with what logind does
+                // w.r.t. handling the lid switch
+                g_debug ("inhibiting lid-switch disabled");
+                return;
+        }
+
         GVariant *params;
 
         if (manager->priv->inhibit_lid_switch_taken) {
@@ -3967,16 +3982,10 @@ handle_suspend_actions (CsdPowerManager *manager)
 
         do_lock = g_settings_get_boolean (manager->priv->settings,
                                           "lock-on-suspend");
-        if (do_lock)
-                g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                                          G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                          NULL,
-                                          GS_DBUS_NAME,
-                                          GS_DBUS_PATH,
-                                          GS_DBUS_INTERFACE,
-                                          NULL,
-                                          sleep_cb_screensaver_proxy_ready_cb,
-                                          manager);
+
+        if (do_lock) {
+            lock_screensaver (manager);
+        }
 
         /* lift the delay inhibit, so logind can proceed */
         uninhibit_suspend (manager);
@@ -4157,6 +4166,8 @@ csd_power_manager_start (CsdPowerManager *manager,
         manager->priv->settings_xrandr = g_settings_new (CSD_XRANDR_SETTINGS_SCHEMA);
         manager->priv->settings_session = g_settings_new (CSD_SESSION_SETTINGS_SCHEMA);
         manager->priv->use_logind = g_settings_get_boolean (manager->priv->settings_session, "settings-daemon-uses-logind");
+        manager->priv->inhibit_lid_switch_enabled =
+                          g_settings_get_boolean (manager->priv->settings, "inhibit-lid-switch");
 
         manager->priv->up_client = up_client_new ();
 #if ! UP_CHECK_VERSION(0,99,0)
@@ -4480,6 +4491,9 @@ csd_power_manager_finalize (GObject *object)
 
         g_return_if_fail (manager->priv != NULL);
 
+        if (manager->priv->name_id != 0)
+                g_bus_unown_name (manager->priv->name_id);
+
 
         G_OBJECT_CLASS (csd_power_manager_parent_class)->finalize (object);
 }
@@ -4556,36 +4570,51 @@ handle_method_call_screen (CsdPowerManager *manager,
         guint value_tmp;
         GError *error = NULL;
 
-        if (g_strcmp0 (method_name, "GetPercentage") == 0) {
-                g_debug ("screen get percentage");
-                value = backlight_get_percentage (manager, &error);
+        if ((g_strcmp0 (method_name, "GetPercentage") == 0) || (g_strcmp0 (method_name, "SetPercentage") == 0)) {
+                if (g_strcmp0 (method_name, "GetPercentage") == 0) {
+                        g_debug ("screen get percentage");
+                        value = backlight_get_percentage (manager, &error);
 
-        } else if (g_strcmp0 (method_name, "SetPercentage") == 0) {
-                g_debug ("screen set percentage");
-                g_variant_get (parameters, "(u)", &value_tmp);
-                ret = backlight_set_percentage (manager, value_tmp, TRUE, &error);
-                if (ret)
-                        value = value_tmp;
+                } else if (g_strcmp0 (method_name, "SetPercentage") == 0) {
+                        g_debug ("screen set percentage");
+                        g_variant_get (parameters, "(u)", &value_tmp);
+                        ret = backlight_set_percentage (manager, value_tmp, TRUE, &error);
+                        if (ret)
+                                value = value_tmp;
+                }
 
-        } else if (g_strcmp0 (method_name, "StepUp") == 0) {
-                g_debug ("screen step up");
-                value = backlight_step_up (manager, &error);
-        } else if (g_strcmp0 (method_name, "StepDown") == 0) {
-                g_debug ("screen step down");
-                value = backlight_step_down (manager, &error);
+                /* return value */
+                if (value < 0) {
+                        g_dbus_method_invocation_return_gerror (invocation,
+                                                                error);
+                        g_error_free (error);
+                } else {
+                        g_dbus_method_invocation_return_value (invocation,
+                                                               g_variant_new ("(u)",
+                                                                              value));
+                }
+        } else if ((g_strcmp0 (method_name, "StepUp") == 0) || (g_strcmp0 (method_name, "StepDown") == 0)) {
+                if (g_strcmp0 (method_name, "StepUp") == 0) {
+                        g_debug ("screen step up");
+                        value = backlight_step_up (manager, &error);
+                } else if (g_strcmp0 (method_name, "StepDown") == 0) {
+                        g_debug ("screen step down");
+                        value = backlight_step_down (manager, &error);
+                }
+
+                /* return value */
+                if (value < 0) {
+                        g_dbus_method_invocation_return_gerror (invocation,
+                                                                error);
+                        g_error_free (error);
+                } else {
+                        g_dbus_method_invocation_return_value (invocation,
+                                                               g_variant_new ("(ui)",
+                                                                              value,
+                                                                              backlight_get_output_id (manager)));
+                }
         } else {
                 g_assert_not_reached ();
-        }
-
-        /* return value */
-        if (value < 0) {
-                g_dbus_method_invocation_return_gerror (invocation,
-                                                        error);
-                g_error_free (error);
-        } else {
-                g_dbus_method_invocation_return_value (invocation,
-                                                       g_variant_new ("(u)",
-                                                                      value));
         }
 }
 
@@ -4623,7 +4652,7 @@ device_to_variant_blob (UpDevice *device)
         /* get an object path, even for the composite device */
         object_path = up_device_get_object_path (device);
         if (object_path == NULL)
-                object_path = CSD_DBUS_PATH;
+                object_path = CSD_POWER_DBUS_PATH;
 
         /* format complex object */
         value = g_variant_new ("(sssusdut)",
@@ -4805,6 +4834,14 @@ on_bus_gotten (GObject             *source_object,
                                                    NULL,
                                                    NULL);
         }
+
+        manager->priv->name_id = g_bus_own_name_on_connection (connection,
+                                                               CSD_POWER_DBUS_INTERFACE,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
 }
 
 static void

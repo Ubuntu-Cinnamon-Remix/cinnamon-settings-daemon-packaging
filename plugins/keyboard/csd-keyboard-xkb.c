@@ -89,10 +89,10 @@ activation_error (void)
 						     ("Error activating XKB configuration.\n"
 						      "There can be various reasons for that.\n\n"
 						      "If you report this situation as a bug, include the results of\n"
-						      " • <b>%s</b>\n"
-						      " • <b>%s</b>\n"
-						      " • <b>%s</b>\n"
-						      " • <b>%s</b>"),
+						      " <b>%s</b>\n"
+						      " <b>%s</b>\n"
+						      " <b>%s</b>\n"
+						      " <b>%s</b>"),
 						     "xprop -root | grep XKB",
 						     "gsettings get org.gnome.libgnomekbd.keyboard model",
 						     "gsettings get org.gnome.libgnomekbd.keyboard layouts",
@@ -315,28 +315,6 @@ status_icon_popup_menu_cb (GtkStatusIcon * icon, guint button, guint time)
 	gtk_menu_popup (popup_menu, NULL, NULL,
 			gtk_status_icon_position_menu,
 			(gpointer) icon, button, time);
-}
-
-static void
-show_hide_icon ()
-{
-	if (g_strv_length (current_kbd_config.layouts_variants) > 1) {
-		if (icon == NULL) {
-			xkl_debug (150, "Creating keyboard status icon\n");
-			icon = gkbd_status_new ();
-			g_signal_connect (icon, "popup-menu",
-					  G_CALLBACK
-					  (status_icon_popup_menu_cb),
-					  NULL);
-
-		}
-	} else {
-		if (icon != NULL) {
-			xkl_debug (150, "Destroying icon\n");
-			g_object_unref (icon);
-			icon = NULL;
-		}
-	}
 }
 
 static gboolean

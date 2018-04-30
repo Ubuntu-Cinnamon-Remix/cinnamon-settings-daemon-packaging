@@ -40,7 +40,8 @@ device_set_property (XDevice        *xdevice,
                      const char     *device_name,
                      PropertyHelper *property)
 {
-        int rc, i;
+        int rc;
+        unsigned long i;
         Atom prop;
         Atom realtype;
         int realformat;
@@ -60,9 +61,9 @@ device_set_property (XDevice        *xdevice,
                                  &bytes_after, &data);
 
         if (rc != Success ||
-            realtype != property->type ||
+            realtype != (Atom)property->type ||
             realformat != property->format ||
-            nitems < property->nitems) {
+            nitems < (unsigned long)property->nitems) {
                 gdk_error_trap_pop_ignored ();
                 g_warning ("Error reading property \"%s\" for \"%s\"", property->name, device_name);
                 return FALSE;
@@ -75,6 +76,9 @@ device_set_property (XDevice        *xdevice,
                                 break;
                         case 32:
                                 ((long*)data)[i] = property->data.i[i];
+                                break;
+                        default:
+                                g_warning("device_set_property: default case");
                                 break;
                 }
         }
@@ -177,23 +181,32 @@ device_is_touchpad (XDevice *xdevice)
         int realformat;
         unsigned long nitems, bytes_after;
         unsigned char *data;
+        const char *names[] = {
+            "libinput Tapping Enabled",
+            /* we don't check on the type being XI_TOUCHPAD here,
+             * but having a "Synaptics Off" property should be enough */
+            "Synaptics Off",
+            NULL,
+        };
+        const char **name = names;
 
-        /* we don't check on the type being XI_TOUCHPAD here,
-         * but having a "Synaptics Off" property should be enough */
+        do {
+                prop = XInternAtom (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), *name, True);
+                if (prop) {
+                        gdk_error_trap_push ();
+                        if ((XGetDeviceProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
+                                                 xdevice, prop, 0, 1, False,
+                                                 XA_INTEGER, &realtype, &realformat, &nitems,
+                                                 &bytes_after, &data) == Success) && (realtype != None)) {
+                                gdk_error_trap_pop_ignored ();
+                                XFree (data);
+                                return TRUE;
+                        }
+                        gdk_error_trap_pop_ignored ();
+                }
 
-        prop = XInternAtom (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), "Synaptics Off", False);
-        if (!prop)
-                return FALSE;
-
-        gdk_error_trap_push ();
-        if ((XGetDeviceProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), xdevice, prop, 0, 1, False,
-                                XA_INTEGER, &realtype, &realformat, &nitems,
-                                &bytes_after, &data) == Success) && (realtype != None)) {
-                gdk_error_trap_pop_ignored ();
-                XFree (data);
-                return TRUE;
-        }
-        gdk_error_trap_pop_ignored ();
+                name++;
+        } while (*name);
 
         return FALSE;
 }
@@ -228,8 +241,7 @@ device_type_is_present (InfoIdentifyFunc info_func,
                         DeviceIdentifyFunc device_func)
 {
         XDeviceInfo *device_info;
-        gint n_devices;
-        guint i;
+        gint n_devices,i;
         gboolean retval;
 
         if (supports_xinput_devices () == FALSE)
@@ -505,9 +517,9 @@ run_custom_command (GdkDevice              *device,
         g_object_get (device, "device-id", &id, NULL);
 
         argv[0] = cmd;
-        argv[1] = "-t";
+        argv[1] = (char *)"-t";
         argv[2] = (char *) custom_command_to_string (command);
-        argv[3] = "-i";
+        argv[3] = (char *)"-i";
         argv[4] = g_strdup_printf ("%d", id);
         argv[5] = g_strdup_printf ("%s", gdk_device_get_name (device));
         argv[6] = NULL;
@@ -530,7 +542,7 @@ get_disabled_devices (GdkDeviceManager *manager)
 {
         XDeviceInfo *device_info;
         gint n_devices;
-        guint i;
+        gint i;
         GList *ret;
 
         ret = NULL;

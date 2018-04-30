@@ -63,8 +63,6 @@ enum {
         PROP_0,
 };
 
-static void     csd_color_manager_class_init  (CsdColorManagerClass *klass);
-static void     csd_color_manager_init        (CsdColorManager      *color_manager);
 static void     csd_color_manager_finalize    (GObject             *object);
 
 G_DEFINE_TYPE (CsdColorManager, csd_color_manager, G_TYPE_OBJECT)
@@ -513,7 +511,7 @@ utf8_to_wchar_t (const char *src)
         len += 1;
         buf = g_malloc (sizeof (wchar_t) * len);
         converted = mbstowcs (buf, src, len - 1);
-        g_assert (converted != -1);
+        g_assert (converted != (size_t)-1);
         buf[converted] = '\0';
 out:
         return buf;
@@ -1038,7 +1036,7 @@ gcm_session_use_output_profile_for_screen (CsdColorManager *manager,
 #define CD_PROFILE_METADATA_SCREEN_BRIGHTNESS		"SCREEN_brightness"
 #endif
 
-#define CSD_DBUS_SERVICE		"org.cinnamon.SettingsDaemon"
+#define CSD_DBUS_SERVICE		"org.cinnamon.SettingsDaemon.Power"
 #define CSD_DBUS_INTERFACE_POWER_SCREEN	"org.cinnamon.SettingsDaemon.Power.Screen"
 #define CSD_DBUS_PATH_POWER		"/org/cinnamon/SettingsDaemon/Power"
 
@@ -1198,7 +1196,7 @@ gcm_session_device_assign_connect_cb (GObject *object,
         /* get properties */
         ret = cd_device_connect_finish (device, res, &error);
         if (!ret) {
-                g_warning ("failed to connect to device: %s",
+                g_debug ("failed to connect to device: %s",
                            error->message);
                 g_error_free (error);
                 goto out;
@@ -2143,10 +2141,10 @@ gcm_session_profile_store_added_cb (GcmProfileStore *profile_store,
         profile_props = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                NULL, NULL);
         g_hash_table_insert (profile_props,
-                             CD_PROFILE_PROPERTY_FILENAME,
+                             (gpointer) CD_PROFILE_PROPERTY_FILENAME,
                              (gpointer) filename);
         g_hash_table_insert (profile_props,
-                             CD_PROFILE_METADATA_FILE_CHECKSUM,
+                             (gpointer) CD_PROFILE_METADATA_FILE_CHECKSUM,
                              (gpointer) checksum);
         cd_client_create_profile (priv->client,
                                   profile_id,

@@ -1,60 +1,63 @@
 Source: cinnamon-settings-daemon
 Section: x11
 Priority: optional
-Maintainer: Debian Cinnamon Team <pkg-cinnamon-team@lists.alioth.debian.org>
-Uploaders: Maximiliano Curia <maxy@debian.org>,
-           Margarita Manterola <marga@debian.org>,
-           Fabio Fantoni <fantonifabio@tiscali.it>
-Build-Depends: autotools-dev,
-               debhelper (>= 9),
-               dh-autoreconf,
-               gtk-doc-tools,
-               intltool (>= 0.37.1),
-               libcanberra-gtk3-dev,
-               libcinnamon-desktop-dev (>= 2.6.3),
-               libcolord-dev (>= 0.1.27),
-               libcups2-dev,
-               libdbus-glib-1-dev (>= 0.88),
-               libfontconfig1-dev,
-               libglib2.0-dev (>= 2.37.3),
-               libgnomekbd-dev (>= 3.6.0),
-               libgtk-3-dev (>= 3.9.10),
-               libgudev-1.0-dev [linux-any],
-               liblcms2-dev,
-               libnotify-dev (>= 0.7.0),
-               libnss3-dev,
-               libpolkit-gobject-1-dev,
-               libpulse-dev (>= 0.9.16),
-               librsvg2-dev,
-               libsystemd-dev [linux-any],
-               libupower-glib-dev (>= 0.9.11),
-               libwacom-dev (>= 0.4) [linux-any],
-               libx11-dev,
-               libxext-dev,
-               libxi-dev,
-               libxklavier-dev,
-               libxtst-dev,
-               xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any]
-Standards-Version: 3.9.6
+Maintainer: Debian Cinnamon Team <debian-cinnamon@lists.debian.org>
+Uploaders:
+ Maximiliano Curia <maxy@debian.org>,
+ Margarita Manterola <marga@debian.org>,
+ Fabio Fantoni <fantonifabio@tiscali.it>,
+Build-Depends:
+ autoconf-archive,
+ automake,
+ debhelper (>= 11.1~),
+ docbook-xsl,
+ intltool (>= 0.37.1),
+ libcanberra-gtk3-dev,
+ libcinnamon-desktop-dev (>= 3.8~),
+ libcolord-dev (>= 0.1.27),
+ libcups2-dev,
+ libdbus-glib-1-dev (>= 0.88),
+ libfontconfig1-dev,
+ libglib2.0-dev (>= 2.37.3),
+ libgnomekbd-dev (>= 3.6.0),
+ libgtk-3-dev (>= 3.9.10),
+ libgudev-1.0-dev [linux-any],
+ liblcms2-dev,
+ libnotify-dev (>= 0.7.0),
+ libnss3-dev,
+ libpolkit-gobject-1-dev,
+ libpulse-dev (>= 0.9.16),
+ librsvg2-dev,
+ libsystemd-dev [linux-any],
+ libupower-glib-dev (>= 0.9.11),
+ libwacom-dev (>= 0.4) [linux-any],
+ libx11-dev,
+ libxext-dev,
+ libxi-dev,
+ libxklavier-dev,
+ libxtst-dev,
+ xsltproc,
+Standards-Version: 4.1.3
 Homepage: http://cinnamon.linuxmint.com
-Vcs-Browser: http://anonscm.debian.org/cgit/pkg-cinnamon/cinnamon-settings-daemon.git
-Vcs-Git: git://anonscm.debian.org/pkg-cinnamon/cinnamon-settings-daemon.git
+Vcs-Browser: https://salsa.debian.org/cinnamon-team/cinnamon-settings-daemon
+Vcs-Git: https://salsa.debian.org/cinnamon-team/cinnamon-settings-daemon.git
 
 Package: cinnamon-settings-daemon
 Architecture: any
-Depends: cinnamon-desktop-data (>= 2.6.3),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Recommends: pulseaudio
+Depends: cinnamon-desktop-data (>= 3.8~), ${misc:Depends}, ${shlibs:Depends}
+Recommends: cinnamon-l10n, pulseaudio
+Suggests:
+ cinnamon-screensaver,
+ gnome-calculator | galculator | mate-calc,
+ gnome-power-manager,
+ gnome-screenshot,
+ muffin | x-window-manager,
+ tracker-gui | gnome-search-tool,
+ x11-xserver-utils,
 Pre-Depends: ${misc:Pre-Depends}
-Breaks: banshee (<< 0.13.2+dfsg-7),
-        gnome-color-manager (<< 3.0),
-        gnome-screensaver (<< 2.28.0),
-        gnome-session (<< 2.24),
-        rhythmbox (<< 0.11.5),
-        totem (<< 2.22.0),
-        unity-greeter (<< 0.2.1-0ubuntu1)
-Suggests: cinnamon-screensaver, muffin | x-window-manager, x11-xserver-utils
+Breaks:
+ cinnamon (<< 3.6),
+ cinnamon-control-center (<< 3.6),
 Description: daemon handling the Cinnamon session settings
  This package contains the daemon which is responsible for setting the
  various parameters of a Cinnamon session and the applications that run
@@ -73,10 +76,11 @@ Description: daemon handling the Cinnamon session settings
 
 Package: cinnamon-settings-daemon-dev
 Architecture: any
-Depends: libdbus-glib-1-dev (>= 0.74),
-         libglib2.0-dev (>= 2.26.0),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Headers for building applications communicating with cinnamon-settings-daemon
+Depends:
+ libdbus-glib-1-dev (>= 0.74),
+ libglib2.0-dev (>= 2.26.0),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: headers for building applications communicating with cinnamon-settings-daemon
  This package contains header files required to build applications that
  communicate with the Cinnamon settings daemon over D-Bus.

@@ -49,6 +49,7 @@
 
 #define MOUSE_SETTINGS_SCHEMA     "org.cinnamon.settings-daemon.peripherals.mouse"
 #define INTERFACE_SETTINGS_SCHEMA "org.cinnamon.desktop.interface"
+#define INTERFACE_WM_SETTINGS_SCHEMA "org.cinnamon.desktop.wm.preferences"
 #define SOUND_SETTINGS_SCHEMA     "org.cinnamon.desktop.sound"
 #define PRIVACY_SETTINGS_SCHEMA   "org.cinnamon.desktop.privacy"
 
@@ -226,7 +227,7 @@
 /* The minimum screen height at which we turn on a window-scale of 2;
  * below this there just isn't enough vertical real estate for GNOME
  * apps to work, and it's better to just be tiny */
-#define HIDPI_MIN_HEIGHT 1200
+#define HIDPI_MIN_HEIGHT 1500
 
 typedef struct _TranslationEntry TranslationEntry;
 typedef void (* TranslationFunc) (CinnamonSettingsXSettingsManager *manager,
@@ -261,8 +262,6 @@ enum {
         CSD_XSETTINGS_ERROR_INIT
 };
 
-static void     cinnamon_xsettings_manager_class_init  (CinnamonSettingsXSettingsManagerClass *klass);
-static void     cinnamon_xsettings_manager_init        (CinnamonSettingsXSettingsManager      *xsettings_manager);
 static void     cinnamon_xsettings_manager_finalize    (GObject                  *object);
 
 G_DEFINE_TYPE (CinnamonSettingsXSettingsManager, cinnamon_xsettings_manager, G_TYPE_OBJECT)
@@ -355,7 +354,6 @@ static TranslationEntry translations [] = {
         { "org.cinnamon.desktop.interface", "gtk-timeout-initial",    "Gtk/TimeoutInitial",      translate_int_int },
         { "org.cinnamon.desktop.interface", "gtk-timeout-repeat",     "Gtk/TimeoutRepeat",       translate_int_int },
         { "org.cinnamon.desktop.interface", "gtk-color-scheme",       "Gtk/ColorScheme",         translate_string_string },
-        { "org.cinnamon.desktop.interface", "gtk-decoration-layout",  "Gtk/DecorationLayout",    translate_string_string },
         { "org.cinnamon.desktop.interface", "gtk-im-preedit-style",   "Gtk/IMPreeditStyle",      translate_string_string },
         { "org.cinnamon.desktop.interface", "gtk-im-status-style",    "Gtk/IMStatusStyle",       translate_string_string },
         { "org.cinnamon.desktop.interface", "gtk-im-module",          "Gtk/IMModule",            translate_string_string },
@@ -365,7 +363,10 @@ static TranslationEntry translations [] = {
         { "org.cinnamon.desktop.interface", "menubar-accel",          "Gtk/MenuBarAccel",        translate_string_string },
         { "org.cinnamon.desktop.interface", "enable-animations",      "Gtk/EnableAnimations",    translate_bool_int },
         { "org.cinnamon.desktop.interface", "cursor-theme",           "Gtk/CursorThemeName",     translate_string_string },
-
+        { "org.cinnamon.desktop.wm.preferences", "button-layout",  "Gtk/DecorationLayout",    translate_string_string },
+        { "org.cinnamon.desktop.wm.preferences", "action-double-click-titlebar",  "Gtk/TitlebarDoubleClick",    translate_string_string },
+        { "org.cinnamon.desktop.wm.preferences", "action-middle-click-titlebar",  "Gtk/TitlebarMiddleClick",    translate_string_string },
+        { "org.cinnamon.desktop.wm.preferences", "action-right-click-titlebar",  "Gtk/TitlebarRightClick",    translate_string_string },
         { "org.cinnamon.settings-daemon.plugins.xsettings", "show-input-method-menu", "Gtk/ShowInputMethodMenu", translate_bool_int },
         { "org.cinnamon.settings-daemon.plugins.xsettings", "show-unicode-menu",      "Gtk/ShowUnicodeMenu",     translate_bool_int },
         { "org.cinnamon.settings-daemon.plugins.xsettings", "automatic-mnemonics",    "Gtk/AutoMnemonics",       translate_bool_int },
@@ -828,7 +829,8 @@ xsettings_callback (GSettings             *settings,
         GVariant         *value;
 
         if (g_str_equal (key, TEXT_SCALING_FACTOR_KEY) ||
-            g_str_equal (key, SCALING_FACTOR_KEY)) {
+            g_str_equal (key, SCALING_FACTOR_KEY) ||
+            g_str_equal (key, CURSOR_SIZE_KEY)) {
             xft_callback (NULL, key, manager);
             return;
 	}
@@ -933,6 +935,8 @@ cinnamon_xsettings_manager_start (CinnamonSettingsXSettingsManager *manager,
                              MOUSE_SETTINGS_SCHEMA, g_settings_new (MOUSE_SETTINGS_SCHEMA));
         g_hash_table_insert (manager->priv->settings,
                              INTERFACE_SETTINGS_SCHEMA, g_settings_new (INTERFACE_SETTINGS_SCHEMA));
+        g_hash_table_insert (manager->priv->settings,
+                             INTERFACE_WM_SETTINGS_SCHEMA, g_settings_new (INTERFACE_WM_SETTINGS_SCHEMA));
         g_hash_table_insert (manager->priv->settings,
                              SOUND_SETTINGS_SCHEMA, g_settings_new (SOUND_SETTINGS_SCHEMA));
         g_hash_table_insert (manager->priv->settings,

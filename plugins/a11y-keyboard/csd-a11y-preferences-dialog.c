@@ -79,8 +79,6 @@ enum {
         PROP_0,
 };
 
-static void     csd_a11y_preferences_dialog_class_init  (CsdA11yPreferencesDialogClass *klass);
-static void     csd_a11y_preferences_dialog_init        (CsdA11yPreferencesDialog      *a11y_preferences_dialog);
 static void     csd_a11y_preferences_dialog_finalize    (GObject                       *object);
 
 G_DEFINE_TYPE (CsdA11yPreferencesDialog, csd_a11y_preferences_dialog, GTK_TYPE_DIALOG)
@@ -412,8 +410,7 @@ csd_a11y_preferences_dialog_init (CsdA11yPreferencesDialog *dialog)
         gtk_window_set_title (GTK_WINDOW (dialog), _("Universal Access Preferences"));
         gtk_window_set_icon_name (GTK_WINDOW (dialog), "preferences-desktop-accessibility");
         g_object_set (dialog,
-                      "allow-shrink", FALSE,
-                      "allow-grow", FALSE,
+                      "resizable", FALSE,
                       NULL);
 
         gtk_dialog_add_buttons (GTK_DIALOG (dialog),

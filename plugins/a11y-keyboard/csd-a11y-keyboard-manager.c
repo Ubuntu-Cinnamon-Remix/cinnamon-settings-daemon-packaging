@@ -69,8 +69,6 @@ struct CsdA11yKeyboardManagerPrivate
         NotifyNotification *notification;
 };
 
-static void     csd_a11y_keyboard_manager_class_init  (CsdA11yKeyboardManagerClass *klass);
-static void     csd_a11y_keyboard_manager_init        (CsdA11yKeyboardManager      *a11y_keyboard_manager);
 static void     csd_a11y_keyboard_manager_finalize    (GObject             *object);
 static void     csd_a11y_keyboard_manager_ensure_status_icon (CsdA11yKeyboardManager *manager);
 static void     set_server_from_gsettings (CsdA11yKeyboardManager *manager);
@@ -301,11 +299,6 @@ set_server_from_gsettings (CsdA11yKeyboardManager *manager)
                                                      desc->ctrls->ax_options,
                                                      XkbAccessXFeedbackMask | XkbAX_StickyKeysFBMask);
         }
-
-        /* toggle keys */
-        desc->ctrls->ax_options = set_clear (g_settings_get_boolean (settings, "togglekeys-enable"),
-                                             desc->ctrls->ax_options,
-                                             XkbAccessXFeedbackMask | XkbAX_IndicatorFBMask);
 
         /*
         g_debug ("CHANGE to : 0x%x", desc->ctrls->enabled_ctrls);
@@ -850,10 +843,6 @@ set_gsettings_from_server (CsdA11yKeyboardManager *manager)
         changed |= set_bool (settings,
                              "stickykeys-modifier-beep",
                              desc->ctrls->ax_options & XkbAX_StickyKeysFBMask);
-
-        changed |= set_bool (settings,
-                             "togglekeys-enable",
-                             desc->ctrls->ax_options & XkbAX_IndicatorFBMask);
 
         if (!changed && stickykeys_changed ^ slowkeys_changed) {
                 /*

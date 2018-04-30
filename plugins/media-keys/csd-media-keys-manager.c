@@ -55,8 +55,7 @@
 #include "csd-enums.h"
 
 #include <canberra.h>
-#include <pulse/pulseaudio.h>
-#include "gvc-mixer-control.h"
+#include <libcvc/gvc-mixer-control.h>
 
 #include <libcinnamon-desktop/cdesktop-enums.h>
 
@@ -64,19 +63,12 @@
 
 /* For media keys, we need to keep using org.gnome because
    that's what apps are looking for */
-#define GNOME_DBUS_PATH "/org/gnome/SettingsDaemon"
-#define GNOME_DBUS_NAME "org.gnome.SettingsDaemon"
-#define CSD_MEDIA_KEYS_DBUS_PATH GNOME_DBUS_PATH "/MediaKeys"
-#define CSD_MEDIA_KEYS_DBUS_NAME GNOME_DBUS_NAME ".MediaKeys"
+#define GSD_DBUS_NAME            "org.gnome.SettingsDaemon"
+#define CSD_MEDIA_KEYS_DBUS_PATH "/org/gnome/SettingsDaemon/MediaKeys"
+#define CSD_MEDIA_KEYS_DBUS_NAME "org.gnome.SettingsDaemon.MediaKeys"
 
-#define CINNAMON_DBUS_PATH "/org/cinnamon/SettingsDaemon"
-#define CINNAMON_DBUS_NAME "org.cinnamon.SettingsDaemon"
-
-#define CINNAMON_SHELL_DBUS_PATH "/org/Cinnamon"
-#define CINNAMON_SHELL_DBUS_NAME "org.Cinnamon"
-
-#define CINNAMON_KEYBINDINGS_PATH CINNAMON_DBUS_PATH "/KeybindingHandler"
-#define CINNAMON_KEYBINDINGS_NAME CINNAMON_DBUS_NAME ".KeybindingHandler"
+#define CINNAMON_KEYBINDINGS_PATH "/org/cinnamon/SettingsDaemon/KeybindingHandler"
+#define CINNAMON_KEYBINDINGS_NAME "org.cinnamon.SettingsDaemon.KeybindingHandler"
 
 #define GNOME_SESSION_DBUS_NAME "org.gnome.SessionManager"
 #define GNOME_SESSION_DBUS_PATH "/org/gnome/SessionManager"
@@ -85,6 +77,8 @@
 #define GNOME_KEYRING_DBUS_NAME "org.gnome.keyring"
 #define GNOME_KEYRING_DBUS_PATH "/org/gnome/keyring/daemon"
 #define GNOME_KEYRING_DBUS_INTERFACE "org.gnome.keyring.Daemon"
+
+#define OSD_ALL_OUTPUTS -1
 
 static const gchar introspection_xml[] =
 "<node>"
@@ -122,7 +116,6 @@ static const gchar kb_introspection_xml[] =
 #define HIGH_CONTRAST "HighContrast"
 
 #define VOLUME_STEP 5           /* percents for one volume button press */
-#define MAX_VOLUME 65536.0
 
 #define LOGIND_DBUS_NAME                       "org.freedesktop.login1"
 #define LOGIND_DBUS_PATH                       "/org/freedesktop/login1"
@@ -139,6 +132,10 @@ typedef struct {
 
 struct CsdMediaKeysManagerPrivate
 {
+        /* dbus owned names */
+        guint           name_id;
+        guint           gnome_name_id;
+
         /* Volume bits */
         GvcMixerControl *volume;
         GvcMixerStream  *stream;
@@ -164,8 +161,8 @@ struct CsdMediaKeysManagerPrivate
         GDBusProxy      *power_keyboard_proxy;
 
         /* OSD stuff */
-        GDBusProxy      *osd_proxy;
-        GCancellable    *osd_cancellable;
+        GDBusProxy      *cinnamon_proxy;
+        GCancellable    *cinnamon_cancellable;
 
         /* logind stuff */
         GDBusProxy      *logind_proxy;
@@ -197,8 +194,6 @@ struct CsdMediaKeysManagerPrivate
         NotifyNotification *kb_backlight_notification;
 };
 
-static void     csd_media_keys_manager_class_init  (CsdMediaKeysManagerClass *klass);
-static void     csd_media_keys_manager_init        (CsdMediaKeysManager      *media_keys_manager);
 static void     csd_media_keys_manager_finalize    (GObject                  *object);
 static void     register_manager                   (CsdMediaKeysManager      *manager);
 static gboolean do_action (CsdMediaKeysManager *manager,
@@ -370,68 +365,77 @@ execute (CsdMediaKeysManager *manager,
 static void 
 ensure_cancellable (GCancellable **cancellable)
 {
-    if (*cancellable == NULL) {
-        *cancellable = g_cancellable_new ();
-        g_object_add_weak_pointer (G_OBJECT (*cancellable),
-                                   (gpointer *)cancellable);
-    } else {
-        g_object_ref (*cancellable);
-    }
+        if (*cancellable == NULL) {
+                *cancellable = g_cancellable_new ();
+                g_object_add_weak_pointer (G_OBJECT (*cancellable),
+                                           (gpointer *)cancellable);
+        } else {
+                g_object_ref (*cancellable);
+        }
 }
 
 static void
-show_osd_complete (GObject      *source,
-                   GAsyncResult *result,
-                   gpointer     data)
+cinnamon_proxy_complete (GObject      *source,
+                         GAsyncResult *result,
+                         gpointer     data)
 {
-    CsdMediaKeysManager *manager = data;
-    g_object_unref (manager->priv->osd_cancellable);
+        CsdMediaKeysManager *manager = data;
+        g_object_unref (manager->priv->cinnamon_cancellable);
 }
 
 static void
 show_osd (CsdMediaKeysManager *manager,
           const char          *icon,
-          int                  level)
+          int                  level,
+          int                  monitor)
 {
-    GVariantBuilder builder;
+        GVariantBuilder builder;
 
-    if (manager->priv->connection == NULL ||
-        manager->priv->osd_proxy == NULL) {
-            g_warning ("No existing D-Bus connection trying to handle osd");
-            return;
-    }
+        if (manager->priv->connection == NULL ||
+            manager->priv->cinnamon_proxy == NULL) {
+                g_warning ("No existing D-Bus connection trying to handle osd");
+                return;
+        }
 
-    g_variant_builder_init (&builder, G_VARIANT_TYPE_TUPLE);
-    g_variant_builder_open (&builder, G_VARIANT_TYPE_VARDICT);
-    if (icon)
-        g_variant_builder_add (&builder, "{sv}",
-                               "icon", g_variant_new_string (icon));
-    if (level >= 0)
-        g_variant_builder_add (&builder, "{sv}",
-                               "level", g_variant_new_int32 (level));
-    g_variant_builder_close (&builder);
+        g_variant_builder_init (&builder, G_VARIANT_TYPE_TUPLE);
+        g_variant_builder_open (&builder, G_VARIANT_TYPE_VARDICT);
+        if (icon)
+                g_variant_builder_add (&builder, "{sv}",
+                                       "icon", g_variant_new_string (icon));
+        if (level >= 0)
+                g_variant_builder_add (&builder, "{sv}",
+                                       "level", g_variant_new_int32 (level));
+        if (monitor >= 0)
+                g_variant_builder_add (&builder, "{sv}",
+                                       "monitor", g_variant_new_int32 (monitor));
+        g_variant_builder_close (&builder);
 
-    ensure_cancellable (&manager->priv->osd_cancellable);
+        ensure_cancellable (&manager->priv->cinnamon_cancellable);
 
-    g_dbus_proxy_call (manager->priv->osd_proxy,
-                       "ShowOSD",
-                       g_variant_builder_end (&builder),
-                       G_DBUS_CALL_FLAGS_NO_AUTO_START,
-                       -1,
-                       manager->priv->osd_cancellable,
-                       show_osd_complete,
-                       manager);
+        g_dbus_proxy_call (manager->priv->cinnamon_proxy,
+                           "ShowOSD",
+                           g_variant_builder_end (&builder),
+                           G_DBUS_CALL_FLAGS_NO_AUTO_START,
+                           -1,
+                           manager->priv->cinnamon_cancellable,
+                           cinnamon_proxy_complete,
+                           manager);
 }
 
 static const char *
 get_icon_name_for_volume (gboolean muted,
-                          int volume)
+                          int volume,
+                          gboolean is_mic)
 {
     static const char *icon_names[] = {
         "audio-volume-muted-symbolic",
         "audio-volume-low-symbolic",
         "audio-volume-medium-symbolic",
         "audio-volume-high-symbolic",
+        "microphone-sensitivity-muted-symbolic",
+        "microphone-sensitivity-low-symbolic",
+        "microphone-sensitivity-medium-symbolic",
+        "microphone-sensitivity-high-symbolic",
         NULL
     };
     int n;
@@ -445,6 +449,9 @@ get_icon_name_for_volume (gboolean muted,
         } else if (n > 3) {
             n = 3;
         }
+    }
+    if (is_mic) {
+      n += 4;
     }
 
     return icon_names[n];
@@ -601,7 +608,7 @@ do_eject_action (CsdMediaKeysManager *manager)
         }
 
         /* Show the dialogue */
-        show_osd (manager, "media-eject-symbolic", -1);
+        show_osd (manager, "media-eject-symbolic", -1, OSD_ALL_OUTPUTS);
 
         /* Clean up the drive selection and exit if no suitable
          * drives are found */
@@ -661,7 +668,7 @@ do_touchpad_osd_action (CsdMediaKeysManager *manager, gboolean state)
 {
     show_osd (manager,
               state ? "input-touchpad-symbolic" : "touchpad-disabled-symbolic",
-              -1);
+              -1, OSD_ALL_OUTPUTS);
 }
 
 static void
@@ -685,32 +692,30 @@ do_touchpad_action (CsdMediaKeysManager *manager)
 }
 
 static void
-update_dialog (CsdMediaKeysManager *manager,
+show_sound_osd (CsdMediaKeysManager *manager,
                GvcMixerStream      *stream,
+               gboolean             is_mic,
                gint                 vol,
+               gint                 max_vol,
                gboolean             muted,
                gboolean             sound_changed,
                gboolean             quiet)
-{    
+{
     const char *icon;
-        vol = CLAMP (vol, 0, 100);
-
-        icon = get_icon_name_for_volume (muted, vol);
-
-        show_osd (manager, icon, vol);
-
-done:
-        if (quiet == FALSE && sound_changed != FALSE && muted == FALSE) {                            
-                GSettings *settings = g_settings_new ("org.cinnamon.desktop.sound");
-                gboolean enabled = g_settings_get_boolean (settings, "volume-sound-enabled");
-                char *sound = g_settings_get_string (settings, "volume-sound-file");                
-                if (enabled) {
-                    ca_context_change_device (manager->priv->ca, gvc_mixer_stream_get_name (stream));
-                    ca_context_play (manager->priv->ca, 1, CA_PROP_MEDIA_FILENAME, sound, NULL);
-                }
-                g_free(sound);
-                g_object_unref (settings);
+    vol = CLAMP (vol, 0, max_vol);
+    icon = get_icon_name_for_volume (muted, vol, is_mic);
+    show_osd (manager, icon, vol, OSD_ALL_OUTPUTS);
+    if (quiet == FALSE && sound_changed != FALSE && muted == FALSE) {
+        GSettings *settings = g_settings_new ("org.cinnamon.desktop.sound");
+        gboolean enabled = g_settings_get_boolean (settings, "volume-sound-enabled");
+        char *sound = g_settings_get_string (settings, "volume-sound-file");
+        if (enabled) {
+            ca_context_change_device (manager->priv->ca, gvc_mixer_stream_get_name (stream));
+            ca_context_play (manager->priv->ca, 1, CA_PROP_MEDIA_FILENAME, sound, NULL);
         }
+        g_free(sound);
+        g_object_unref (settings);
+    }
 }
 
 #ifdef HAVE_GUDEV
@@ -829,8 +834,9 @@ do_sound_action (CsdMediaKeysManager *manager,
 {
 	GvcMixerStream *stream;
         gboolean old_muted, new_muted;
-        guint old_vol, new_vol, norm_vol_step, osd_vol;
+        guint old_vol, new_vol, norm_vol_step, osd_vol, osd_max_vol;
         gboolean sound_changed;
+        GSettings *settings;
 
         /* Find the stream that corresponds to the device, if any */
         gboolean is_source_stream =
@@ -850,6 +856,10 @@ do_sound_action (CsdMediaKeysManager *manager,
                 return;
 
         norm_vol_step = PA_VOLUME_NORM * VOLUME_STEP / 100;
+
+        settings = g_settings_new ("org.cinnamon.desktop.sound");
+        osd_max_vol = PA_VOLUME_NORM * g_settings_get_int (settings, "maximum-volume") / 100;
+        g_object_unref (settings);
 
         /* FIXME: this is racy */
         new_vol = old_vol = gvc_mixer_stream_get_volume (stream);
@@ -873,7 +883,7 @@ do_sound_action (CsdMediaKeysManager *manager,
                 new_muted = FALSE;
                 /* When coming out of mute only increase the volume if it was 0 */
                 if (!old_muted || old_vol == 0)
-                        new_vol = MIN (old_vol + norm_vol_step, MAX_VOLUME);
+                        new_vol = MIN (old_vol + norm_vol_step, osd_max_vol);
                 break;
         }
 
@@ -891,13 +901,13 @@ do_sound_action (CsdMediaKeysManager *manager,
 
         if (type == C_DESKTOP_MEDIA_KEY_VOLUME_DOWN && old_vol == 0 && old_muted)
                 osd_vol = -1;
-        else if (type == C_DESKTOP_MEDIA_KEY_VOLUME_UP && old_vol == PA_VOLUME_NORM && !old_muted)
+        else if (type == C_DESKTOP_MEDIA_KEY_VOLUME_UP && old_vol == osd_max_vol && !old_muted)
                 osd_vol = 101;
         else if (!new_muted)
-                osd_vol = (int) (100 * (double) new_vol / PA_VOLUME_NORM);
+                osd_vol = (int) (100 * (double) new_vol / osd_max_vol);
         else
                 osd_vol = 0;
-        update_dialog (manager, stream, osd_vol, new_muted, sound_changed, quiet);
+        show_sound_osd (manager, stream, is_source_stream, osd_vol, osd_max_vol, new_muted, sound_changed, quiet);
 }
 
 static void
@@ -1165,7 +1175,7 @@ csd_media_player_key_pressed (CsdMediaKeysManager *manager,
         if (!have_listeners) {
                 if (!mpris_controller_key (manager->priv->mpris_controller, key)) {
                 /* Popup a dialog with an (/) icon */
-                    show_osd (manager, "action-unavailable-symbolic", -1);
+                    show_osd (manager, "action-unavailable-symbolic", -1, OSD_ALL_OUTPUTS);
                  }
                 return TRUE;
         }
@@ -1323,6 +1333,22 @@ do_video_rotate_action (CsdMediaKeysManager *manager,
 }
 
 static void
+do_video_rotate_lock_action (CsdMediaKeysManager *manager,
+                             gint64               timestamp)
+{
+        GSettings *settings;
+        gboolean locked;
+
+        settings = g_settings_new ("org.cinnamon.settings-daemon.peripherals.touchscreen");
+        locked = !g_settings_get_boolean (settings, "orientation-lock");
+        g_settings_set_boolean (settings, "orientation-lock", locked);
+        g_object_unref (settings);
+
+        show_osd (manager, locked ? "rotation-locked-symbolic"
+                                  : "rotation-allowed-symbolic", -1, OSD_ALL_OUTPUTS);
+}
+
+static void
 do_toggle_accessibility_key (const char *key)
 {
         GSettings *settings;
@@ -1343,7 +1369,23 @@ do_screenreader_action (CsdMediaKeysManager *manager)
 static void
 do_on_screen_keyboard_action (CsdMediaKeysManager *manager)
 {
-        do_toggle_accessibility_key ("screen-keyboard-enabled");
+    if (manager->priv->connection == NULL ||
+        manager->priv->cinnamon_proxy == NULL) {
+            g_warning ("No existing D-Bus connection trying to handle osd");
+            do_toggle_accessibility_key ("screen-keyboard-enabled");
+            return;
+    }
+
+    ensure_cancellable (&manager->priv->cinnamon_cancellable);
+
+    g_dbus_proxy_call (manager->priv->cinnamon_proxy,
+                       "ToggleKeyboard",
+                       NULL,
+                       G_DBUS_CALL_FLAGS_NONE,
+                       -1,
+                       manager->priv->cinnamon_cancellable,
+                       cinnamon_proxy_complete,
+                       manager);
 }
 
 static void
@@ -1445,12 +1487,13 @@ update_screen_cb (GObject             *source_object,
 {
         GError *error = NULL;
         guint percentage;
-        GVariant *new_percentage;
+        int output_id;
+        GVariant *variant;
         CsdMediaKeysManager *manager = CSD_MEDIA_KEYS_MANAGER (user_data);
 
-        new_percentage = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
-                                                   res, &error);
-        if (new_percentage == NULL) {
+        variant = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
+                                            res, &error);
+        if (variant == NULL) {
                 g_warning ("Failed to set new screen percentage: %s",
                            error->message);
                 g_error_free (error);
@@ -1458,9 +1501,9 @@ update_screen_cb (GObject             *source_object,
         }
 
         /* update the dialog with the new value */
-        g_variant_get (new_percentage, "(u)", &percentage);
-        show_osd (manager, "display-brightness-symbolic", percentage);
-        g_variant_unref (new_percentage);
+        g_variant_get (variant, "(ui)", &percentage, &output_id);
+        show_osd (manager, "display-brightness-symbolic", percentage, output_id);
+        g_variant_unref (variant);
 }
 
 static void
@@ -1541,7 +1584,7 @@ update_keyboard_cb (GObject             *source_object,
 
         /* update the dialog with the new value */
         g_variant_get (new_percentage, "(u)", &percentage);
-        show_osd (manager, "keyboard-brightness-symbolic", percentage);
+        show_osd (manager, "keyboard-brightness-symbolic", percentage, OSD_ALL_OUTPUTS);
         g_variant_unref (new_percentage);
 }
 
@@ -1705,6 +1748,9 @@ do_action (CsdMediaKeysManager *manager,
         case C_DESKTOP_MEDIA_KEY_ROTATE_VIDEO:
                 do_video_rotate_action (manager, timestamp);
                 break;
+        case C_DESKTOP_MEDIA_KEY_ROTATE_VIDEO_LOCK:
+                do_video_rotate_lock_action (manager, timestamp);
+                break;
         case C_DESKTOP_MEDIA_KEY_SCREENREADER:
                 do_screenreader_action (manager);
                 break;
@@ -1737,7 +1783,7 @@ do_action (CsdMediaKeysManager *manager,
                 do_keyboard_brightness_action (manager, type);
                 break;
         case C_DESKTOP_MEDIA_KEY_BATTERY:
-                do_execute_desktop (manager, "gnome-power-statistics.desktop", timestamp);
+                do_execute_desktop (manager, "org.gnome.PowerStats.desktop", timestamp);
                 break;
         /* Note, no default so compiler catches missing keys */
         case C_DESKTOP_MEDIA_KEY_SEPARATOR:
@@ -1925,9 +1971,9 @@ csd_media_keys_manager_stop (CsdMediaKeysManager *manager)
                 priv->upower_proxy = NULL;
         }
 
-        if (priv->osd_proxy) {
-            g_object_unref (priv->osd_proxy);
-            priv->osd_proxy = NULL;
+        if (priv->cinnamon_proxy) {
+            g_object_unref (priv->cinnamon_proxy);
+            priv->cinnamon_proxy = NULL;
         }
 
         if (priv->cancellable != NULL) {
@@ -1935,6 +1981,12 @@ csd_media_keys_manager_stop (CsdMediaKeysManager *manager)
                 g_object_unref (priv->cancellable);
                 priv->cancellable = NULL;
         }
+
+        if (priv->name_id != 0)
+                g_bus_unown_name (priv->name_id);
+
+        if (priv->gnome_name_id != 0)
+                g_bus_unown_name (priv->gnome_name_id);
 
         if (priv->introspection_data) {
                 g_dbus_node_info_unref (priv->introspection_data);
@@ -1969,10 +2021,10 @@ csd_media_keys_manager_stop (CsdMediaKeysManager *manager)
                 priv->kb_backlight_notification = NULL;
         }
 
-        if (priv->osd_cancellable != NULL) {
-            g_cancellable_cancel (priv->osd_cancellable);
-            g_object_unref (priv->osd_cancellable);
-            priv->osd_cancellable = NULL;
+        if (priv->cinnamon_cancellable != NULL) {
+            g_cancellable_cancel (priv->cinnamon_cancellable);
+            g_object_unref (priv->cinnamon_cancellable);
+            priv->cinnamon_cancellable = NULL;
         }
 
         if (priv->screens != NULL) {
@@ -2201,8 +2253,8 @@ osd_ready_cb (GObject             *source_object,
 {
     GError *error = NULL;
 
-    manager->priv->osd_proxy = g_dbus_proxy_new_finish (res, &error);
-    if (manager->priv->osd_proxy == NULL) {
+    manager->priv->cinnamon_proxy = g_dbus_proxy_new_finish (res, &error);
+    if (manager->priv->cinnamon_proxy == NULL) {
         g_warning ("Failed to get proxy for OSD operations: %s", error->message);
         g_error_free (error);
     }
@@ -2238,6 +2290,14 @@ on_bus_gotten (GObject             *source_object,
                                            NULL,
                                            NULL);
 
+        manager->priv->gnome_name_id = g_bus_own_name_on_connection (connection,
+                                                               GSD_DBUS_NAME,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
+
         g_dbus_connection_register_object (connection,
                                            CINNAMON_KEYBINDINGS_PATH,
                                            manager->priv->kb_introspection_data->interfaces[0],
@@ -2246,10 +2306,18 @@ on_bus_gotten (GObject             *source_object,
                                            NULL,
                                            NULL);
 
+        manager->priv->name_id = g_bus_own_name_on_connection (connection,
+                                                               CINNAMON_KEYBINDINGS_NAME,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
+
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.XRANDR_2",
                           "/org/cinnamon/SettingsDaemon/XRANDR",
                           "org.cinnamon.SettingsDaemon.XRANDR_2",
                           NULL,
@@ -2259,7 +2327,7 @@ on_bus_gotten (GObject             *source_object,
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.Power",
                           "/org/cinnamon/SettingsDaemon/Power",
                           "org.cinnamon.SettingsDaemon.Power.Screen",
                           NULL,
@@ -2269,7 +2337,7 @@ on_bus_gotten (GObject             *source_object,
         g_dbus_proxy_new (manager->priv->connection,
                           G_DBUS_PROXY_FLAGS_NONE,
                           NULL,
-                          "org.cinnamon.SettingsDaemon",
+                          "org.cinnamon.SettingsDaemon.Power",
                           "/org/cinnamon/SettingsDaemon/Power",
                           "org.cinnamon.SettingsDaemon.Power.Keyboard",
                           NULL,

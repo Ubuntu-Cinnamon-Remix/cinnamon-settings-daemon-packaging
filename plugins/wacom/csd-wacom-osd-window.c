@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street - Suite 500, Boston, MA 02110-1335, USA.
  *
  * Author: Olivier Fourdan <ofourdan@redhat.com>
  *
@@ -1257,7 +1257,7 @@ csd_wacom_osd_window_mapped (GtkWidget *widget,
 
 	g_return_if_fail (CSD_IS_WACOM_OSD_WINDOW (osd_window));
 
-	/* Position the window at its expected postion before moving
+	/* Position the window at its expected position before moving
 	 * to fullscreen, so the window will be on the right monitor.
 	 */
 	gtk_window_move (GTK_WINDOW (osd_window),

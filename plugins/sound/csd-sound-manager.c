@@ -31,9 +31,8 @@
 
 #include <locale.h>
 
-#include <glib.h>
 #include <glib/gi18n.h>
-#include <gtk/gtk.h>
+#include <gio/gio.h>
 #include <pulse/pulseaudio.h>
 #include <canberra.h>
 
@@ -43,7 +42,7 @@
 #define CSD_SOUND_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CSD_TYPE_SOUND_MANAGER, CsdSoundManagerPrivate))
 
 #define SOUND_HANDLER_DBUS_PATH "/org/cinnamon/SettingsDaemon/Sound"
-#define SOUND_HANDLER_DBUS_NAME "org.cinnamon.SettingsDaemon.Sound" 
+#define SOUND_HANDLER_DBUS_NAME "org.cinnamon.SettingsDaemon.Sound"
 
 #define PLAY_ONCE_FLAG 8675309
 
@@ -64,6 +63,11 @@ static const gchar introspection_xml[] =
 "      <arg name='id' direction='in' type='u'/>"
 "      <arg name='name' direction='in' type='s'/>"
 "    </method>"
+"    <method name='PlaySoundWithChannel'>"
+"      <arg name='id' direction='in' type='u'/>"
+"      <arg name='name' direction='in' type='s'/>"
+"      <arg name='channelname' direction='in' type='s'/>"
+"    </method>"
 "    <method name='CancelSound'>"
 "      <arg name='id' direction='in' type='u'/>"
 "    </method>"
@@ -73,6 +77,7 @@ static const gchar introspection_xml[] =
 struct CsdSoundManagerPrivate
 {
         GSettings *settings;
+        guint      name_id;
         GList     *monitors;
         guint      timeout;
         GDBusNodeInfo   *idata;
@@ -88,8 +93,6 @@ struct CsdSoundManagerPrivate
         GList *onetime_sounds;
 };
 
-static void csd_sound_manager_class_init (CsdSoundManagerClass *klass);
-static void csd_sound_manager_init (CsdSoundManager *sound_manager);
 static void csd_sound_manager_finalize (GObject *object);
 
 G_DEFINE_TYPE (CsdSoundManager, csd_sound_manager, G_TYPE_OBJECT)
@@ -145,6 +148,26 @@ handle_sound_request (GDBusConnection       *connection,
                                      id == PLAY_ONCE_FLAG ? 0 : id,
                                      CA_PROP_EVENT_ID,
                                      sound_name,
+                                     CA_PROP_CANBERRA_CACHE_CONTROL,
+                                     id == PLAY_ONCE_FLAG ? "never" : "volatile",
+                                     NULL);
+                }
+
+                g_dbus_method_invocation_return_value (invocation, NULL);
+
+        } else if (g_strcmp0 (method_name, "PlaySoundWithChannel") == 0) {
+                const char *sound_name;
+                const char *channel_name;
+                guint id;
+
+                g_variant_get (parameters, "(u&s&s)", &id, &sound_name, &channel_name);
+
+                if (should_play (manager, id, sound_name)) {
+                    ca_context_play (manager->priv->ca,
+                                     id == PLAY_ONCE_FLAG ? 0 : id,
+                                     CA_PROP_EVENT_ID, sound_name,
+                                     CA_PROP_MEDIA_ROLE, "test",
+                                     CA_PROP_CANBERRA_FORCE_CHANNEL, channel_name,
                                      NULL);
                 }
 
@@ -161,6 +184,8 @@ handle_sound_request (GDBusConnection       *connection,
                                      id == PLAY_ONCE_FLAG ? 0 : id,
                                      CA_PROP_MEDIA_FILENAME,
                                      sound_file,
+                                     CA_PROP_CANBERRA_CACHE_CONTROL,
+                                     id == PLAY_ONCE_FLAG ? "never" : "volatile",
                                      NULL);
                 }
 
@@ -180,6 +205,8 @@ handle_sound_request (GDBusConnection       *connection,
                                      sound_file,
                                      CA_PROP_CANBERRA_VOLUME,
                                      volume,
+                                     CA_PROP_CANBERRA_CACHE_CONTROL,
+                                     id == PLAY_ONCE_FLAG ? "never" : "volatile",
                                      NULL);
                 }
 
@@ -251,7 +278,7 @@ flush_cache (void)
 
         pa_proplist_sets (pl, PA_PROP_APPLICATION_NAME, PACKAGE_NAME);
         pa_proplist_sets (pl, PA_PROP_APPLICATION_VERSION, PACKAGE_VERSION);
-        pa_proplist_sets (pl, PA_PROP_APPLICATION_ID, "org.cinnamon.SettingsDaemon");
+        pa_proplist_sets (pl, PA_PROP_APPLICATION_ID, "org.cinnamon.SettingsDaemon.Sound");
 
         if (!(c = pa_context_new_with_proplist (pa_mainloop_get_api (ml), PACKAGE_NAME, pl))) {
                 g_debug ("Failed to allocate pa_context");
@@ -427,6 +454,14 @@ on_bus_gotten (GObject             *source_object,
                                            manager,
                                            NULL,
                                            NULL);
+
+        manager->priv->name_id = g_bus_own_name_on_connection (connection,
+                                                               SOUND_HANDLER_DBUS_NAME,
+                                                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL);
 }
 
 gboolean
@@ -540,22 +575,6 @@ csd_sound_manager_stop (CsdSoundManager *manager)
         }
 }
 
-static GObject *
-csd_sound_manager_constructor (
-                GType type,
-                guint n_construct_properties,
-                GObjectConstructParam *construct_properties)
-{
-        CsdSoundManager *m;
-
-        m = CSD_SOUND_MANAGER (G_OBJECT_CLASS (csd_sound_manager_parent_class)->constructor (
-                                                           type,
-                                                           n_construct_properties,
-                                                           construct_properties));
-
-        return G_OBJECT (m);
-}
-
 static void
 csd_sound_manager_dispose (GObject *object)
 {
@@ -573,7 +592,6 @@ csd_sound_manager_class_init (CsdSoundManagerClass *klass)
 {
         GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-        object_class->constructor = csd_sound_manager_constructor;
         object_class->dispose = csd_sound_manager_dispose;
         object_class->finalize = csd_sound_manager_finalize;
 
@@ -597,6 +615,9 @@ csd_sound_manager_finalize (GObject *object)
         sound_manager = CSD_SOUND_MANAGER (object);
 
         g_return_if_fail (sound_manager->priv);
+
+        if (sound_manager->priv->name_id != 0)
+                g_bus_unown_name (sound_manager->priv->name_id);
 
         G_OBJECT_CLASS (csd_sound_manager_parent_class)->finalize (object);
 }

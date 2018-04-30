@@ -47,9 +47,6 @@ struct CsdHousekeepingManagerPrivate {
 
 #define CSD_HOUSEKEEPING_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CSD_TYPE_HOUSEKEEPING_MANAGER, CsdHousekeepingManagerPrivate))
 
-static void     csd_housekeeping_manager_class_init  (CsdHousekeepingManagerClass *klass);
-static void     csd_housekeeping_manager_init        (CsdHousekeepingManager      *housekeeping_manager);
-
 G_DEFINE_TYPE (CsdHousekeepingManager, csd_housekeeping_manager, G_TYPE_OBJECT)
 
 static gpointer manager_object = NULL;
@@ -325,8 +322,7 @@ csd_housekeeping_manager_stop (CsdHousekeepingManager *manager)
                         do_cleanup (manager);
                 }
 
-                g_object_unref (p->settings);
-                p->settings = NULL;
+                g_clear_object (&p->settings);
         }
 
         csd_ldsm_clean ();

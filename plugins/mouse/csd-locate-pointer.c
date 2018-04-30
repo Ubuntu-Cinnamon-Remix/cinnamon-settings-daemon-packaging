@@ -42,7 +42,7 @@ typedef struct CsdLocatePointerData CsdLocatePointerData;
 struct CsdLocatePointerData
 {
   CsdTimeline *timeline;
-  GtkWidget *widget; 
+  GtkWidget *widget;
   GdkWindow *window;
 
   gdouble progress;
@@ -160,6 +160,7 @@ timeline_frame_cb (CsdTimeline *timeline,
 {
   CsdLocatePointerData *data = (CsdLocatePointerData *) user_data;
   GdkScreen *screen;
+  GdkDeviceManager *device_manager;
   gint cursor_x, cursor_y;
 
   if (gtk_widget_is_composited (data->widget))
@@ -176,8 +177,10 @@ timeline_frame_cb (CsdTimeline *timeline,
     }
 
   screen = gdk_window_get_screen (data->window);
-  gdk_window_get_pointer (gdk_screen_get_root_window (screen),
-                          &cursor_x, &cursor_y, NULL);
+  device_manager = gdk_display_get_device_manager (gdk_window_get_display (data->window));
+  gdk_window_get_device_position (gdk_screen_get_root_window (screen),
+                                  gdk_device_manager_get_client_pointer (device_manager),
+                                  &cursor_x, &cursor_y, NULL);
   gdk_window_move (data->window,
                    cursor_x - WINDOW_SIZE / 2,
                    cursor_y - WINDOW_SIZE / 2);
@@ -287,10 +290,14 @@ static void
 move_locate_pointer_window (CsdLocatePointerData *data,
                             GdkScreen            *screen)
 {
+  GdkDeviceManager *device_manager;
   cairo_region_t *region;
   gint cursor_x, cursor_y;
 
-  gdk_window_get_pointer (gdk_screen_get_root_window (screen), &cursor_x, &cursor_y, NULL);
+  device_manager = gdk_display_get_device_manager (gdk_window_get_display (data->window));
+  gdk_window_get_device_position (gdk_screen_get_root_window (screen),
+                                  gdk_device_manager_get_client_pointer (device_manager),
+                                  &cursor_x, &cursor_y, NULL);
 
   gdk_window_move_resize (data->window,
                           cursor_x - WINDOW_SIZE / 2,
@@ -425,14 +432,16 @@ set_locate_pointer (void)
 {
   GdkKeymapKey *keys;
   GdkDisplay *display;
-  int n_screens;
+  GdkScreen *screen;
+  Window xroot;
   int n_keys;
   gboolean has_entries;
   static const guint keyvals[] = { GDK_KEY_Control_L, GDK_KEY_Control_R };
-  unsigned j;
+  unsigned i,j;
 
   display = gdk_display_get_default ();
-  n_screens = gdk_display_get_n_screens (display);
+  screen = gdk_screen_get_default ();
+  xroot = gdk_x11_window_get_xid (gdk_screen_get_root_window (screen));
 
   for (j = 0 ; j < G_N_ELEMENTS (keyvals) ; j++)
     {
@@ -442,63 +451,47 @@ set_locate_pointer (void)
                                                        &n_keys);
       if (has_entries)
         {
-          gint i, j;
           for (i = 0; i < n_keys; i++)
             {
-              for (j = 0; j < n_screens; j++)
-                {
-                  GdkScreen *screen;
-                  Window xroot;
+              gdk_x11_display_error_trap_push (display);
 
-                  screen = gdk_display_get_screen (display, j);
-                  xroot = gdk_x11_window_get_xid (gdk_screen_get_root_window (screen));
+               XGrabKey (GDK_DISPLAY_XDISPLAY (display),
+                         keys[i].keycode,
+                         0,
+                         xroot,
+                         False,
+                         GrabModeAsync,
+                         GrabModeSync);
+               XGrabKey (GDK_DISPLAY_XDISPLAY (display),
+                         keys[i].keycode,
+                         LockMask,
+                         xroot,
+                         False,
+                         GrabModeAsync,
+                         GrabModeSync);
+               XGrabKey (GDK_DISPLAY_XDISPLAY (display),
+                         keys[i].keycode,
+                         Mod2Mask,
+                         xroot,
+                         False,
+                         GrabModeAsync,
+                         GrabModeSync);
+               XGrabKey (GDK_DISPLAY_XDISPLAY (display),
+                         keys[i].keycode,
+                         Mod4Mask,
+                         xroot,
+                         False,
+                         GrabModeAsync,
+                         GrabModeSync);
 
-                  gdk_x11_display_error_trap_push (display);
-
-                  XGrabKey (GDK_DISPLAY_XDISPLAY (display),
-                            keys[i].keycode,
-                            0,
-                            xroot,
-                            False,
-                            GrabModeAsync,
-                            GrabModeSync);
-                  XGrabKey (GDK_DISPLAY_XDISPLAY (display),
-                            keys[i].keycode,
-                            LockMask,
-                            xroot,
-                            False,
-                            GrabModeAsync,
-                            GrabModeSync);
-                  XGrabKey (GDK_DISPLAY_XDISPLAY (display),
-                            keys[i].keycode,
-                            Mod2Mask,
-                            xroot,
-                            False,
-                            GrabModeAsync,
-                            GrabModeSync);
-                  XGrabKey (GDK_DISPLAY_XDISPLAY (display),
-                            keys[i].keycode,
-                            Mod4Mask,
-                            xroot,
-                            False,
-                            GrabModeAsync,
-                            GrabModeSync);
-
-                  gdk_x11_display_error_trap_pop_ignored (display);
-                }
+               gdk_x11_display_error_trap_pop_ignored (display);
             }
 
           g_free (keys);
 
-          for (i = 0; i < n_screens; i++)
-            {
-              GdkScreen *screen;
-
-              screen = gdk_display_get_screen (display, i);
-              gdk_window_add_filter (gdk_screen_get_root_window (screen),
-                                     filter,
-                                     screen);
-            }
+          gdk_window_add_filter (gdk_screen_get_root_window (screen),
+                                 filter,
+                                 screen);
         }
     }
 }
