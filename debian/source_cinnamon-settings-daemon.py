@@ -3,7 +3,7 @@ import re
 
 
 def add_info(report):
-    if not 'Stacktrace' in report:
+    if 'Stacktrace' not in report:
         return
 
     m = re.search(r'/usr/lib/([\w-]+/)?cinnamon-settings-daemon-3.0',
