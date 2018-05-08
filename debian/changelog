@@ -1,0 +1,545 @@
+cinnamon-settings-daemon (3.8.1) tara; urgency=medium
+
+  [ Eli Schwartz ]
+  * Remove vestigial manpage (#229)
+
+  [ Marcin Mielniczuk ]
+  * Fix the inhibit_lid_switch_enabled option being uninitialized while calling inhibit_lid_switch. (#231)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 06 May 2018 15:17:10 +0100
+
+cinnamon-settings-daemon (3.8.0) tara; urgency=medium
+
+  [ brownsr ]
+  * housekeeping: replace gtk_stock items https://github.com/GNOME/gnome-settings-daemon/commit/92fc1c2f605561126e37dc9a69459d5ac66c1e90#diff-35dd745f84c1c68f9626401cda5ee45d
+  * housekeeping: Fix deprecated GUnixMountMonitor calls https://github.com/GNOME/gnome-settings-daemon/commit/a7b82826bd716e50fae6668561117dfedc8873ec#diff-35dd745f84c1c68f9626401cda5ee45d
+  * housekeeping: remove duplicated call https://github.com/GNOME/gnome-settings-daemon/commit/5ad0ff07b016cd920dbb84fbe6b2858aede725f7#diff-35dd745f84c1c68f9626401cda5ee45d
+
+  [ Clement Lefebvre ]
+  * README: Start describing plugins
+  * Add more info to readme
+
+  [ Simon Brown ]
+  * sound: Remove empty constructor function (#200)
+  * sound: Don't include unused GTK+ (#199)
+  * Clipboard: various minor upstream fixes / cleanups (#198)
+
+  [ Clement Lefebvre ]
+  * Add more info to README
+
+  [ Simon Brown ]
+  * common: add break and scroll lock to whitelist (#201)
+
+  [ Clement Lefebvre ]
+  * Add more info to README
+  * Add more info to README
+  * Add more info to README
+
+  [ Simon Brown ]
+  * Housekeeping: various upstream fixes and cleanups (#202)
+
+  [ Clement Lefebvre ]
+  * Add CI configuration
+  * Fix button layout for CSD windows
+  * Fix titlebar click actions for CSD windows
+  * README: Add info about xsettings
+  * media-keys: Play volume_changed sound and display sound OSD according to the max sound volume. (#215)
+  * Provide symlinks in /usr/bin to start the various CSD plugins.
+
+  [ Michael Webster ]
+  * csd-background-manager.c: Remove build conditional for AccountsService background support.  GnomeBG will now determine during runtime whether to handle it or not.
+  * csd-background-manager.c: Set the AccountsService user background at startup.
+
+  [ brownsr ]
+  * mouse: re-enable touchpad when no other pointing devices present https://github.com/GNOME/gnome-settings-daemon/commit/72b8df16a626cd6b638f3953b69f28e08bc39e59#diff-3144fcd94741d0a8ad93771b1f108efdR1138
+  * mouse: Stop idle start when stop() is called https://github.com/GNOME/gnome-settings-daemon/commit/9d6e80924ff9011dc2d8caa8a49a588ff4a318bd#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: simplify finalize call https://github.com/GNOME/gnome-settings-daemon/commit/7c268ddf2c0fea89ed053e55002fba65c523904a#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: simplify stop call https://github.com/GNOME/gnome-settings-daemon/commit/9e4e46a47fd385807f9cbae9d42ebcc312680a1e#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: replace dialogue by warning https://github.com/GNOME/gnome-settings-daemon/commit/3e337371249dace2613d4698d91f587621188c19#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: remove empty contructor and dispose functions https://github.com/GNOME/gnome-settings-daemon/commit/98df44761b4f0c70078df635aaa68adff6454380#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: wrap device button mapping into gdk_error_trap_push/pop https://github.com/GNOME/gnome-settings-daemon/commit/7a07cd12b862fa40ab5c38fee3dc264bb483a494#diff-f3eb78dbfdd1699b6580551f271aba41
+  * mouse: wrap pointer acceleration changes into a gdk_error_trap https://github.com/GNOME/gnome-settings-daemon/commit/8b78228a7e0abfc2c1561a275214da5d77cc7a93#diff-f3eb78dbfdd1699b6580551f271aba41
+  * locate-pointer: Remove support for multiple X screens https://github.com/GNOME/gnome-settings-daemon/commit/cf677a9c47d868b0bdae026b9d0db36df75f9dac#diff-f3eb78dbfdd1699b6580551f271aba41 gdk_display_get_n_screens is now hardcoded just to return 1, so take out the loop using it
+  * locate-pointer: Replace deprecated gdk_window_get_pointer https://github.com/GNOME/gnome-settings-daemon/commit/41a023e58df6864e947849e558a4edb0c4057e20#diff-f3eb78dbfdd1699b6580551f271aba41
+
+  [ Michael Webster ]
+  * Remove .pc folder (quilt-related)
+  * csd-power: Lock the screensaver synchronously prior to suspending.
+
+  [ Maximiliano Curia ]
+  * Update gnome-power-manager's stats desktop name (#225)
+
+  [ Fabio Fantoni ]
+  * debian: wrap-and-sort -bst
+  * update debian/copyright
+  * Bump debhelper build-dep and compat to 10 and other small improvements
+
+  [ Marcin Mielniczuk ]
+  * Add an option to prevent handle-lid-switch from being inhibited. Closes (#219)
+
+  [ Clement Lefebvre ]
+  * Rename inhibit-lid-switch setting
+  * Fix getting gsettings key from the wrong schema
+  * l10n: Update POT file
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 17 Apr 2018 13:13:39 +0100
+
+cinnamon-settings-daemon (3.6.2) sylvia; urgency=medium
+
+  [ JosephMcc ]
+  * settings: Disable automatic screen orientation by default
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 30 Nov 2017 13:50:44 +0000
+
+cinnamon-settings-daemon (3.6.1) sylvia; urgency=medium
+
+  * Power: Change default for sleep-display-ac/battery to 30 minutes
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 09 Nov 2017 12:32:23 +0000
+
+cinnamon-settings-daemon (3.6.0) sylvia; urgency=medium
+
+  [ Albert Pool ]
+  * Make touchpad settings compatible with libinput (#181)
+
+  [ JosephMcc ]
+  * Clean up the autorun dialog a bit (#194)
+
+  [ Clement Lefebvre ]
+  * Xrandr: Hold the session start while the plugin is loaded.
+
+  [ Simon Brown ]
+  * csd-xsettings-gtk: Avoid a potential GFile leak (#195)
+
+  [ Clement Lefebvre ]
+  * l10n: Update POT file
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 23 Oct 2017 13:59:35 +0100
+
+cinnamon-settings-daemon (3.5.0) sylvia; urgency=medium
+
+  * Bump version number (unstable)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 07 Sep 2017 11:15:10 +0100
+
+cinnamon-settings-daemon (3.4.2) sonya; urgency=medium
+
+  [ Michael Webster ]
+  * csd-color-manager.c: Make a device connect warning a debug message instead to reduce .xsession-errors clutter. 
+  * daemon-skeleton: Add a few upstream fixes for startup issues.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 20 Jun 2017 15:49:57 +0200
+
+cinnamon-settings-daemon (3.4.1) sonya; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Fix incorrect DBUS names
+
+  [ JosephMcc ]
+  * media-keys: Don't show the level in the screen lock OSD (#174)
+
+  [ Clement Lefebvre ]
+  * Make CSM wait for xsettings to be fully started before starting the WindowManager phase.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 23 May 2017 15:32:55 +0100
+
+cinnamon-settings-daemon (3.4.0) sonya; urgency=medium
+
+  [ monsta ]
+  * mouse: add missing device closing
+
+  [ leigh123linux ]
+  * Increase cinnamon-desktop required version
+  * power: Fix typo in UPower keyboard GDBus proxy name
+  * Remove redundant aclocal as autoreconf calls it
+  * fix Wmissing-include-dirs warning
+
+  [ Elias Ojala ]
+  * Fix typo in Finnish translation
+
+  [ Clement Lefebvre ]
+  * clipboard: Add test application
+  * color: Add test application
+  * common: Remove obsolete key parsing test program
+  * color: Fix csd-test-color linkage
+  * dummy: Add test application
+  * main: Remove ability to start/stop individual plugins
+  * plugins: Remove "test" from the stand-alone program names
+  * common: Add verbose option to test-plugin.h
+  * plugins: Rename sources of all test applications
+
+  [ JosephMcc ]
+  * mouse-plugin: Add new settings for mouse/touchpad
+
+  [ Clement Lefebvre ]
+  * sound: Rename the sound plugin for PulseAudio
+  * plugins: Add desktop files for all the plugins
+  * plugins: Stop building helpers as plugins
+  * Remove refs to obsolete schemas
+  * common: Remove use of SCHEMA_NAME
+  * common: Report errors on startup in the helper skeleton
+  * Fixed a couple of issues in previous commits
+  * Use unique dbus names
+  * common: Register plugins with the session manager
+  * main: Remove gnome-settings-daemon binary
+  * data: Adapt pkg-config file for API removal
+  * build: Remove separate check for cinnamon-desktop
+  * main: Remove cinnamon-settings-plugin.h
+  * Add CSD plugin icons
+
+  [ leigh123linux ]
+  * Remove calls to g_type_init(), bump GLib required version
+  * Fix redundant redeclarations
+  * add makefile
+  * add m4 to aclocal flags
+  * fix fsf address
+
+  [ Clement Lefebvre ]
+  * Fix backgrounds in HiDPI
+  * Don't kill plugins during CSM stop PHASE
+
+  [ Leigh Scott ]
+  * remove deprecated g_thread_init
+
+  [ leigh123linux ]
+  * Add detection for accountsservice background as it's ubuntu only
+
+  [ brownsr ]
+  * cinnamon-settings-session: remove an ISO C warning
+  * csd-input-helper: remove compiler warnings
+
+  [ Simon Brown ]
+  * daemon-skeleton: remove ISO C compiler warnings (#170)
+  * csd-color-manager: avoid compiler warnings (#172)
+  * csd-locate-pointer: change a shadowed variable causing compiler warnings (#173)
+  * csd-clipboard-manager: remove compiler warnings (#171)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 04 May 2017 13:35:21 +0100
+
+cinnamon-settings-daemon (3.2.1) serena; urgency=medium
+
+  [ leigh123linux ]
+  * media-keys: Add Rotation lock support
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 10 Dec 2016 11:57:53 +0000
+
+cinnamon-settings-daemon (3.2.0) serena; urgency=medium
+
+  [ brownsr ]
+  * avoid compiler warning message about spurious comma
+  * remove deprecated gdk_display_get_n_screens this is now hardcoded to return 1, so loops using this can be removed
+  * remove deprecated function gdk_display_get_n_screens this only returns 1 now, so loops can be removed.
+  * add precautionary test on default display being there
+  * add precautionary test on existence of default display
+
+  [ Jakub Adam ]
+  * orientation: Use g_clear_* helpers
+  * orientation: Remove empty constructor and dispose functions
+  * orientation: Call stop from finalize
+  * orientation: Port to iio-sensor-proxy
+  * orientation: Use symbolic name for the GSettings key name
+  * orientation: Fix screen lock not getting applied
+  * Fix double free in is_wacom_tablet_device()
+
+  [ leigh123linux ]
+  * xsettings: Fix cursor-size changes being ignored
+  * fix spelling mistakes
+
+  [ brownsr ]
+  * remove deprecated g_settings_list_schemas
+  * replace deprecated gtk_icon_info_free with g_object_unref
+
+  [ Peter Hutterer ]
+  * common: don't create the Synaptics Off property if it doesn't exist
+  * common: recognize libinput touchpads as touchpads
+  * mouse: fix indentation
+  * mouse: add helper function for fetching a property
+  * mouse: rename helper to touchpad_set_bool
+  * mouse: split into separate bool helpers
+  * mouse: libinput - hook up tapping configuration
+  * mouse: libinput - hook up natural scroll configuration
+  * mouse: libinput - hook up scrolling settings
+  * mouse: libinput - hook up click methods
+  * mouse: libinput - hook up left-handed setting
+  * mouse: libinput - hook up accel speed
+  * mouse: libinput - hook up middle button emulation
+  * mouse: libinput - hook up disable while typing
+
+  [ Maximiliano Curia ]
+  * Migrate away from gnome-common deprecated vars and macros
+  * Build depend on autoconf-archive
+
+  [ Clement Lefebvre ]
+  * Xrandr plugin: Do not save configuration when RotateTo is called.
+
+  [ Michael Webster ]
+  * orientation plugin: Fix makefile, missing backslash - from previous build migration commit.
+
+  [ brownsr ]
+  * remove a couple of unused variables
+
+  [ monsta ]
+  * mouse: Fix critical warnings with touchpad settings
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 07 Nov 2016 10:44:50 +0000
+
+cinnamon-settings-daemon (3.0.1) sarah; urgency=medium
+
+  * Touchpad: By default, disable the touchpad while typing
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 10 May 2016 16:30:09 +0100
+
+cinnamon-settings-daemon (3.0.0) sarah; urgency=medium
+
+  [ Stephen Collins ]
+  * Add dbus method to play sound event on specified channel
+
+  [ Justin King-Lacroix ]
+  * Corrected the icon shown in the OSD when the mic-mute button is used.
+
+  [ Clement Lefebvre ]
+  * Power plugin: Fixed CSD not notifying Cinnamon on device removal
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 23 Apr 2016 16:17:45 +0100
+
+cinnamon-settings-daemon (2.8.4) rosa; urgency=medium
+
+  [ Michael Webster ]
+  * power manager: prevent sleep properly when the session has a sleep (not idle) inhibitor active
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 07 Mar 2016 17:10:45 +0000
+
+cinnamon-settings-daemon (2.8.3) rosa; urgency=medium
+
+  * Re-added code removed by mistake.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 26 Nov 2015 20:29:18 +0000
+
+cinnamon-settings-daemon (2.8.2) rosa; urgency=medium
+
+  [ Cindy Quach ]
+  * Change the minimum height required to trigger HiDPI scaling.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 20 Nov 2015 17:17:13 +0000
+
+cinnamon-settings-daemon (2.8.1) rosa; urgency=medium
+
+  [ JosephMcc ]
+  * clean up some unused functions and variables
+
+  [ leigh123linux ]
+  * csd-datetime forgets to authorize users
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 09 Nov 2015 10:45:19 +0000
+
+cinnamon-settings-daemon (2.8.0) rosa; urgency=medium
+
+  [ leigh123linux ]
+  * Change summary for motion-acceleration as it has nothing to do with single click
+  * Stop using deprecated GSettings:schema property
+  * print-notifications: Don't show error for job in progress
+  * print-notifications: Close HTTP connections
+
+  [ Mike Gerow ]
+  * Pressing the mic-mute button now toggles the microphone's mute status
+
+  [ Clement Lefebvre ]
+  * Power plugin: Added vendor and model info to GetPrimaryDevice() and GetDevices()
+  * [halfline] Xrandr plugin: don't ever show a dialog for xrandr failures
+  * Xrandr: Catch-up with GSD 3.16 - set a title to the confirmation dialog https://bugzilla.gnome.org/show_bug.cgi?id=706128
+  * Xrandr: Catch-up with GSD 3.16 - Simplify layout of adjacent screens
+  * Xrandr: Catch-up with GSD 3.16 - Add object path to the interface definition XML
+  * Xrandr: Catch-up with GSD 3.16 - Avoid the GnomePnpIds object being created multiple times
+  * Xrandr: Catch-up with GSD 3.16 - Add more debug to the rotate windows call
+  * Xrandr: Catch-up with GSD 3.16 - Swap axes for tablets as well
+  * Xrandr: Catch-up with GSD 3.16 - use default-monitors-setup for autoconfigure
+  * Xrandr: Catch-up with GSD 3.16 - Add reasoning for GnomePnpIds instantiation
+  * Catch-up with GSD 3.16 - Provide a helper function to close an XDevice safely
+  * HiDPI: Don't scale when the physical size isn't properly encoded
+  * Fix crash when a plugin failed to start
+  * modernize code for handling SIGTERM
+  * Unown our DBus name when cinnamon-session says "Stop"
+  * Remove unused code
+  * po: Fixed some refs to GNOME
+
+  [ Fabio Fantoni ]
+  * remove unused debian patches
+  * update debian/copyright
+  * remove unused maintscript
+  * remove manpage from debian, the source one will be used instead
+  * debian packaging improvements and fixes
+  * update man with the one that was in debian folder
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 16 Oct 2015 14:14:18 +0100
+
+cinnamon-settings-daemon (2.6.3) rafaela; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Revert "mouse: Enable two-finger scrolling by default"
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 24 Jun 2015 19:26:31 +0200
+
+cinnamon-settings-daemon (2.6.2) rafaela; urgency=medium
+
+  [ leigh123linux ]
+  * bump version to account for cinnamon-desktop systemd schema change
+  * remove gsettings-desktop-schemas require as the c-s-d code doesn't need it
+  * clean up
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 27 May 2015 10:23:01 +0200
+
+cinnamon-settings-daemon (2.6.1) rafaela; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Replaced "use-systemd" with "settings-daemon-uses-logind" gsettings key
+
+  [ leigh123linux ]
+  * Fix broken KB shortcuts for suspend, hibernate and shutdown
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 25 May 2015 10:37:48 +0200
+
+cinnamon-settings-daemon (2.6.0) rafaela; urgency=medium
+
+  * 2.6.0 
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 19 May 2015 17:12:13 +0200
+
+cinnamon-settings-daemon (2.5.0) unstable; urgency=medium
+
+  * bump for development
+
+ -- Michael Webster <mtwebster@samsung-sucks>  Sat, 11 Apr 2015 08:59:23 -0400
+
+cinnamon-settings-daemon (2.4.3) rebecca; urgency=medium
+
+  * Fixed power button asking what to do even when set to just do it
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 10 Nov 2014 11:02:21 +0100
+
+cinnamon-settings-daemon (2.4.2) rebecca; urgency=medium
+
+  * Re-added media-keys keybindings schema to allow cinnamon-desktop migrate script to work
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 08 Nov 2014 10:06:29 +0100
+
+cinnamon-settings-daemon (2.4.1) rebecca; urgency=medium
+
+  * Enable middle-click mouse emulation by default and support for single-button touchpads
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 31 Oct 2014 16:04:10 +0100
+
+cinnamon-settings-daemon (2.4.0) rebecca; urgency=medium
+
+  * 2.4.0
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 30 Oct 2014 16:06:31 +0100
+
+cinnamon-settings-daemon (2.3.0) unstable; urgency=medium
+
+  * 2.3.0
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 27 Jun 2014 14:23:04 +0100
+
+cinnamon-settings-daemon (2.2.4) qiana; urgency=medium
+
+  * Replace Ctrl with Control so keybindings can parse it properly
+  * Added missing wacom build dep for wacom module to be properly built
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 08 Jun 2014 13:00:36 +0100
+
+cinnamon-settings-daemon (2.2.3) qiana; urgency=medium
+
+  * 2.2.3
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 12 May 2014 21:40:22 +0100
+
+cinnamon-settings-daemon (2.2.2) qiana; urgency=medium
+
+  * 2.2.2
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 01 May 2014 14:46:25 +0100
+
+cinnamon-settings-daemon (2.2.1) qiana; urgency=medium
+
+  * 2.2.1
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 14 Apr 2014 14:15:12 +0100
+
+cinnamon-settings-daemon (2.2.0) qiana; urgency=medium
+
+  * 2.2.0
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 12 Apr 2014 11:44:20 +0100
+
+cinnamon-settings-daemon (2.0.8) petra; urgency=low
+
+  * 2.0.8
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 25 Nov 2013 18:39:05 +0000
+
+cinnamon-settings-daemon (2.0.7) petra; urgency=low
+
+  * 2.0.7
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 07 Nov 2013 10:28:55 +0000
+
+cinnamon-settings-daemon (2.0.6) petra; urgency=low
+
+  * 2.0.6
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 03 Nov 2013 15:49:44 +0000
+
+cinnamon-settings-daemon (2.0.5) petra; urgency=low
+
+  * 2.0.5
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 25 Oct 2013 15:26:23 +0100
+
+cinnamon-settings-daemon (2.0.4) petra; urgency=low
+
+  * 2.0.4
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 24 Oct 2013 11:07:58 +0100
+
+cinnamon-settings-daemon (2.0.3) petra; urgency=low
+
+  * 2.0.3
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 18 Oct 2013 17:40:20 +0100
+
+cinnamon-settings-daemon (2.0.2) petra; urgency=low
+
+  * 2.0.2
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 18 Oct 2013 16:02:02 +0100
+
+cinnamon-settings-daemon (2.0.1) petra; urgency=low
+
+  * 2.0.1
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 02 Oct 2013 15:13:43 +0100
+
+cinnamon-settings-daemon (2.0.0) petra; urgency=low
+
+  * 2.0.0
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 02 Oct 2013 13:51:06 +0100
+
+cinnamon-settings-daemon (1.9.1) petra; urgency=low
+
+  * 1.9.1
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 30 Sep 2013 13:55:00 +0100
+
+cinnamon-settings-daemon (1.0.0) olivia; urgency=low
+
+  * Initial functionality with Cinnamon
+
+ -- Michael Webster <miketwebster@gmail.com>  Fri, 24 May 2013 22:31:00 -0400
+
+cinnamon-settings-daemon (0.0.1) olivia; urgency=low
+
+  * Initial port from cinnamon-settings-daemon raring 3.6.4-0ubuntu8
+
+ -- Michael Webster <miketwebster@gmail.com>  Fri, 24 May 2013 17:41:00 -0400
+
