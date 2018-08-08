@@ -1,3 +1,14 @@
+cinnamon-settings-daemon (3.8.4-2~) UNRELEASED; urgency=medium
+
+  [ Maximiliano Curia ]
+  * New revision
+
+  [ Jeremy Bicha ]
+  * Add housekeeping-fix-improper-notify_notification_close.patch:
+    - Fix build with glib2.0 2.57.2 (Closes: 905657)
+
+ -- Maximiliano Curia <maxy@debian.org>  Wed, 08 Aug 2018 09:33:35 +0200
+
 cinnamon-settings-daemon (3.8.4-1) unstable; urgency=medium
 
   * New upstream release (3.8.4).
