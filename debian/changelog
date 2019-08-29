@@ -1,3 +1,43 @@
+cinnamon-settings-daemon (4.2.2) tina; urgency=medium
+
+  [ Corbin Auriti ]
+  *  Fix Shutdown immediately not working - the easy way (#260)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 25 Jul 2019 10:22:37 +0200
+
+cinnamon-settings-daemon (4.2.1) tina; urgency=medium
+
+  [ Michael Webster ]
+  * csd-power-manager.c: Define UP_DEVICE_LEVEL_NONE for ourselves if it's missing.  UpDeviceLevel was new in 0.99.0.
+  * csd-power-manager.c: Use gint instead of an enum type for compatibility with < 0.99.0 upower.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 10 Jul 2019 11:53:38 +0200
+
+cinnamon-settings-daemon (4.2.0) tina; urgency=medium
+
+  [ montagdude ]
+  * Implement suspend/hibernate with ConsoleKit (#252)
+
+  [ Clement Lefebvre ]
+  * Power: Clean up unused code
+
+  [ Mirko Girgenti ]
+  * https://github.com/linuxmint/cinnamon-settings-daemon/issues/192 (#246)
+
+  [ Clement Lefebvre ]
+  * Disable natural-scroll by default for mice
+
+  [ Michael Webster ]
+  * csd-mouse-manager.c: Fix issues from bfa99478e0d996fe (Natural mouse scrolling).
+  * misc: Use gdk_x11_display_error_trap_* instead of deprecated gdk_error_trap_*.
+  * configure.ac: disable deprecation warnings entirely.
+  * csd-power-manager.c: Check for a device battery-level property before attempting to access it.
+
+  [ William Poetra Yoga ]
+  * Prevent Segmentation Fault (#255)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 23 Jun 2019 15:37:44 +0200
+
 cinnamon-settings-daemon (4.0.3) tessa; urgency=medium
 
   * Xrandr: Rotate touchscreens when applying a new configuration

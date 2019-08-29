@@ -58,9 +58,7 @@
 #define GNOME_SESSION_DBUS_INTERFACE_PRESENCE   "org.gnome.SessionManager.Presence"
 
 #define UPOWER_DBUS_NAME                        "org.freedesktop.UPower"
-#define UPOWER_DBUS_PATH                        "/org/freedesktop/UPower"
 #define UPOWER_DBUS_PATH_KBDBACKLIGHT           "/org/freedesktop/UPower/KbdBacklight"
-#define UPOWER_DBUS_INTERFACE                   "org.freedesktop.UPower"
 #define UPOWER_DBUS_INTERFACE_KBDBACKLIGHT      "org.freedesktop.UPower.KbdBacklight"
 
 #define CSD_POWER_SETTINGS_SCHEMA               "org.cinnamon.settings-daemon.plugins.power"
@@ -144,7 +142,6 @@ struct CsdPowerManagerPrivate
         UpClient                *up_client;
         GDBusConnection         *connection;
         GCancellable            *bus_cancellable;
-        GDBusProxy              *upower_proxy;
         GDBusProxy              *upower_kbd_proxy;
         gboolean				backlight_helper_force;
         gchar*                  backlight_helper_preference_args;
@@ -1939,7 +1936,7 @@ do_power_action_type (CsdPowerManager *manager,
 
                 gboolean hybrid = g_settings_get_boolean (manager->priv->settings_cinnamon_session,
                                                           "prefer-hybrid-sleep");
-                csd_power_suspend (manager->priv->use_logind, manager->priv->upower_proxy, hybrid);
+                csd_power_suspend (manager->priv->use_logind, hybrid);
                 break;
         case CSD_POWER_ACTION_INTERACTIVE:
                 cinnamon_session_shutdown ();
@@ -1950,8 +1947,7 @@ do_power_action_type (CsdPowerManager *manager,
                 }
 
                 turn_monitors_off (manager);
-
-                csd_power_hibernate (manager->priv->use_logind, manager->priv->upower_proxy);
+                csd_power_hibernate (manager->priv->use_logind);
                 break;
         case CSD_POWER_ACTION_SHUTDOWN:
                 /* this is only used on critically low battery where
@@ -3536,22 +3532,6 @@ session_presence_proxy_ready_cb (GObject *source_object,
 }
 
 static void
-power_proxy_ready_cb (GObject             *source_object,
-                      GAsyncResult        *res,
-                      gpointer             user_data)
-{
-        GError *error = NULL;
-        CsdPowerManager *manager = CSD_POWER_MANAGER (user_data);
-
-        manager->priv->upower_proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-        if (manager->priv->upower_proxy == NULL) {
-                g_warning ("Could not connect to UPower: %s",
-                           error->message);
-                g_error_free (error);
-        }
-}
-
-static void
 power_keyboard_proxy_ready_cb (GObject             *source_object,
                                GAsyncResult        *res,
                                gpointer             user_data)
@@ -4144,17 +4124,6 @@ csd_power_manager_start (CsdPowerManager *manager,
         gtk_status_icon_set_title (manager->priv->status_icon, _("Power Manager"));
         gtk_status_icon_set_visible (manager->priv->status_icon, FALSE);
 
-        /* connect to UPower for async power operations */
-        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                  G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                  NULL,
-                                  UPOWER_DBUS_NAME,
-                                  UPOWER_DBUS_PATH,
-                                  UPOWER_DBUS_INTERFACE,
-                                  NULL,
-                                  power_proxy_ready_cb,
-                                  manager);
-
         /* connect to UPower for keyboard backlight control */
         g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                   G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
@@ -4258,12 +4227,12 @@ csd_power_manager_start (CsdPowerManager *manager,
          * being "0" by default to being "600" by default 
          * https://bugzilla.gnome.org/show_bug.cgi?id=709114
          */
-        gdk_error_trap_push ();
+        gdk_x11_display_error_trap_push (gdk_display_get_default ());
         int dummy;
         if (DPMSQueryExtension(GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), &dummy, &dummy)) {
             DPMSSetTimeouts (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), 0, 0, 0);
         }
-        gdk_error_trap_pop_ignored ();
+        gdk_x11_display_error_trap_pop_ignored (gdk_display_get_default ());
 
         manager->priv->xscreensaver_watchdog_timer_id = g_timeout_add_seconds (XSCREENSAVER_WATCHDOG_TIMEOUT,
                                                                                disable_builtin_screensaver,
@@ -4375,11 +4344,6 @@ csd_power_manager_stop (CsdPowerManager *manager)
         g_free (manager->priv->previous_summary);
         manager->priv->previous_summary = NULL;
 
-        if (manager->priv->upower_proxy != NULL) {
-                g_object_unref (manager->priv->upower_proxy);
-                manager->priv->upower_proxy = NULL;
-        }
-
         if (manager->priv->session_proxy != NULL) {
                 g_object_unref (manager->priv->session_proxy);
                 manager->priv->session_proxy = NULL;
@@ -4450,6 +4414,10 @@ csd_power_manager_finalize (GObject *object)
         G_OBJECT_CLASS (csd_power_manager_parent_class)->finalize (object);
 }
 
+#if !UP_CHECK_VERSION(0,99,0)
+#define UP_DEVICE_LEVEL_NONE 1
+#endif
+
 static GVariant *
 device_to_variant_blob (UpDevice *device)
 {
@@ -4462,7 +4430,7 @@ device_to_variant_blob (UpDevice *device)
         GVariant *value;
         UpDeviceKind kind;
         UpDeviceState state;
-        UpDeviceLevel battery_level;
+        gint battery_level;
 
         icon = gpm_upower_get_device_icon (device, TRUE);
         device_icon = g_icon_to_string (icon);
@@ -4471,11 +4439,19 @@ device_to_variant_blob (UpDevice *device)
                       "model", &model,
                       "kind", &kind,
                       "percentage", &percentage,
-                      "battery-level", &battery_level,
                       "state", &state,
                       "time-to-empty", &time_empty,
                       "time-to-full", &time_full,
                       NULL);
+
+        /* upower < 0.99.5 compatibility */
+        if (g_object_class_find_property (G_OBJECT_GET_CLASS (device), "battery-level")) {
+                g_object_get (device,
+                              "battery-level", &battery_level,
+                              NULL);
+        } else {
+                battery_level = UP_DEVICE_LEVEL_NONE;
+        }
 
         /* only return time for these simple states */
         if (state == UP_DEVICE_STATE_DISCHARGING)
