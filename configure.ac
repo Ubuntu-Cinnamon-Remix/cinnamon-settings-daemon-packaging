@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 
 AC_INIT([cinnamon-settings-daemon],
-        [4.0.3],
+        [4.2.2],
         [https://github.com/linuxmint/cinnamon-settings-daemon/issues])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -459,6 +459,8 @@ else
 	fi
 fi
 AC_SUBST(DEBUG_CFLAGS)
+
+CFLAGS="$CFLAGS -Wno-deprecated-declarations -Wno-deprecated -Wno-declaration-after-statement"
 
 AC_OUTPUT([
 Makefile
