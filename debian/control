@@ -53,6 +53,7 @@ Suggests:
  gnome-power-manager,
  gnome-screenshot,
  muffin (>= 4.2) | x-window-manager,
+ python3-tinycss,
  tracker-gui | gnome-search-tool,
  x11-xserver-utils,
 Pre-Depends: ${misc:Pre-Depends}
