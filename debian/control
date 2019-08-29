@@ -45,7 +45,7 @@ Vcs-Git: https://salsa.debian.org/cinnamon-team/cinnamon-settings-daemon.git
 
 Package: cinnamon-settings-daemon
 Architecture: any
-Depends: cinnamon-desktop-data (>= 4.2), ${misc:Depends}, ${shlibs:Depends}
+Depends: cinnamon-desktop-data (>= 4.2), python3-tinycss, ${misc:Depends}, ${shlibs:Depends}
 Recommends: cinnamon-l10n (>= 4.2), pulseaudio
 Suggests:
  cinnamon-screensaver (>= 4.2),
@@ -53,7 +53,6 @@ Suggests:
  gnome-power-manager,
  gnome-screenshot,
  muffin (>= 4.2) | x-window-manager,
- python3-tinycss,
  tracker-gui | gnome-search-tool,
  x11-xserver-utils,
 Pre-Depends: ${misc:Pre-Depends}
