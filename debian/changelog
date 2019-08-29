@@ -1,11 +1,14 @@
-cinnamon-settings-daemon (4.0.3-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (4.0.3-1) unstable; urgency=medium
 
   * New upstream release (4.0.3)
 
   [ Fabio Fantoni ]
   * Readd missed xserver-xorg-input-wacom to build-deps. (Closes: 929341)
 
- -- Norbert Preining <preining@debian.org>  Tue, 11 Dec 2018 19:23:19 +0900
+  [ Maximiliano Curia ]
+  * Release to unstable
+
+ -- Maximiliano Curia <maxy@debian.org>  Thu, 29 Aug 2019 12:04:50 -0300
 
 cinnamon-settings-daemon (3.8.4-2) unstable; urgency=medium
 
