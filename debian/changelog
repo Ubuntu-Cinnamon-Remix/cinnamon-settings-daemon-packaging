@@ -1,8 +1,8 @@
-cinnamon-settings-daemon (4.4.0-1~1) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (4.4.0-1) experimental; urgency=medium
 
   * New upstream version 4.4.0
 
- -- Norbert Preining <norbert@preining.info>  Mon, 06 Jan 2020 11:58:15 +0900
+ -- Norbert Preining <norbert@preining.info>  Sun, 19 Jan 2020 09:49:42 +0900
 
 cinnamon-settings-daemon (4.2.2-2) unstable; urgency=medium
 
