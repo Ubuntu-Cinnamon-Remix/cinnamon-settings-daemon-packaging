@@ -1,3 +1,10 @@
+cinnamon-settings-daemon (4.4.0-3) unstable; urgency=medium
+
+  [ Fabio Fantoni ]
+  * Bump deps and reverse-deps to avoid partial upgrade on testing migration
+
+ -- Norbert Preining <norbert@preining.info>  Mon, 10 Feb 2020 22:49:24 +0900
+
 cinnamon-settings-daemon (4.4.0-2) unstable; urgency=medium
 
   * Upload to unstable
