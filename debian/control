@@ -46,21 +46,21 @@ Vcs-Git: https://salsa.debian.org/cinnamon-team/cinnamon-settings-daemon.git
 
 Package: cinnamon-settings-daemon
 Architecture: any
-Depends: cinnamon-desktop-data (>= 4.4), python3-tinycss, ${misc:Depends}, ${shlibs:Depends}
-Recommends: cinnamon-l10n (>= 4.4), pulseaudio
+Depends: cinnamon-desktop-data (>= 4.6~), python3-tinycss, ${misc:Depends}, ${shlibs:Depends}
+Recommends: cinnamon-l10n (>= 4.6~), pulseaudio
 Suggests:
- cinnamon-screensaver (>= 4.4),
+ cinnamon-screensaver (>= 4.6~),
  gnome-calculator | galculator | mate-calc,
  gnome-power-manager,
  gnome-screenshot,
- muffin (>= 4.4) | x-window-manager,
+ muffin (>= 4.6~) | x-window-manager,
  tracker-gui | gnome-search-tool,
  x11-xserver-utils,
 Pre-Depends: ${misc:Pre-Depends}
 Breaks:
- cinnamon (<< 4.4),
- cinnamon-control-center (<< 4.4),
- cinnamon-core (<< 4.4~),
+ cinnamon (<< 4.6~),
+ cinnamon-control-center (<< 4.6~),
+ cinnamon-core (<< 4.6~),
 Description: daemon handling the Cinnamon session settings
  This package contains the daemon which is responsible for setting the
  various parameters of a Cinnamon session and the applications that run
