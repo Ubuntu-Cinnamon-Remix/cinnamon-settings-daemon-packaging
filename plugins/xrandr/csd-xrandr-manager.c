@@ -478,8 +478,11 @@ apply_configuration_from_filename (CsdXrandrManager *manager,
 
         // Get the screen rotation and apply it to touchscreens
         output_info = get_laptop_output_info (priv->rw_screen, config);
-        rotation = gnome_rr_output_info_get_rotation (output_info);
-        rotate_touchscreens (manager, rotation);
+
+        if (output_info) {
+            rotation = gnome_rr_output_info_get_rotation (output_info);
+            rotate_touchscreens (manager, rotation);
+        }
 
         g_object_unref (config);
 
@@ -978,6 +981,24 @@ find_best_mode (GnomeRROutput *output)
         return best_mode;
 }
 
+static gint
+get_monitor_index_for_output (XID output_id)
+{
+    GdkDisplay *display = gdk_display_get_default ();
+    GdkScreen *screen = gdk_display_get_default_screen (display);
+    gint i;
+
+    i = 0;
+
+    for (i = 0; i < gdk_display_get_n_monitors (display); i++) {
+        if (gdk_x11_screen_get_monitor_output (screen, i) == output_id) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 static gboolean
 turn_on (GnomeRRScreen *screen,
          GnomeRROutputInfo *info,
@@ -1050,6 +1071,56 @@ turn_on_and_get_rightmost_offset (GnomeRRScreen *screen, GnomeRROutputInfo *info
         return x;
 }
 
+static void
+adjust_output_positions_for_scaling (GnomeRRScreen *screen,
+                                     GnomeRRConfig *config,
+                                     GPtrArray     *sorted_outputs)
+{
+    gint target_global_scale, x;
+    guint i;
+
+    target_global_scale = 1;
+
+    /* Go thru all active outputs, figure out the highest scale monitor */
+    for (i = 0; i < sorted_outputs->len; i++) {
+        gint monitor_index, target_monitor_scale;
+        GnomeRROutputInfo *info = sorted_outputs->pdata[i];
+
+        if (!gnome_rr_output_info_is_active (info)) {
+            continue;
+        }
+
+        GnomeRROutput *output = gnome_rr_screen_get_output_by_name (screen, gnome_rr_output_info_get_name (info));
+
+        monitor_index = get_monitor_index_for_output (gnome_rr_output_get_id (output));
+        target_monitor_scale = gnome_rr_screen_calculate_best_global_scale (screen, monitor_index);
+
+        gnome_rr_output_info_set_scale (info, (gfloat) target_monitor_scale);
+
+        /* We will always downscale???  We could respect the setting instead, but this is only for auto-config */
+        target_global_scale = MAX (target_global_scale, target_monitor_scale);
+    }
+
+    gnome_rr_config_set_base_scale (config, target_global_scale);
+
+    /* Now adjust their x values according to scale (positions are (width * global scale) */
+    x = 0;
+
+    for (i = 0; i < sorted_outputs->len; i++) {
+        GnomeRROutputInfo *info = sorted_outputs->pdata[i];
+        gint y, width, height;
+
+        if (!gnome_rr_output_info_is_active (info)) {
+            continue;
+        }
+
+        gnome_rr_output_info_get_geometry (info, NULL, &y, &width, &height);
+        gnome_rr_output_info_set_geometry (info, x, y, width, height);
+
+        x += width * target_global_scale;
+    }
+}
+
 /* Used from g_ptr_array_sort(); compares outputs based on their X position */
 static int
 compare_output_positions (gconstpointer a, gconstpointer b)
@@ -1115,6 +1186,13 @@ trim_rightmost_outputs_that_dont_fit_in_framebuffer (GnomeRRScreen *rr_screen, G
 
         if (config_is_all_off (config))
                 applicable = FALSE;
+
+        /* Calculate the pending global scale and adjust x positions of active outputs -
+         * this isn't the best spot to do this, but it would be even more tedious if we
+         * attempted to adjust the monitors during the previous passes (since we have to
+         * go thru them all first to get the global scale.  In reality there are generally
+         * only a couple of monitors to worry about, so it's still quick. */
+        adjust_output_positions_for_scaling (rr_screen, config, sorted_outputs);
 
         g_ptr_array_free (sorted_outputs, FALSE);
 
@@ -1720,15 +1798,24 @@ static void
 use_stored_configuration_or_auto_configure_outputs (CsdXrandrManager *manager, guint32 timestamp)
 {
         CsdXrandrManagerPrivate *priv = manager->priv;
-        char *intended_filename;
+        char *intended_filename, *legacy_filename;
         GError *error;
         gboolean success;
 
         intended_filename = gnome_rr_config_get_intended_filename ();
+        legacy_filename = gnome_rr_config_get_legacy_filename ();
 
         error = NULL;
         success = apply_configuration_from_filename (manager, intended_filename, TRUE, timestamp, &error);
+
+        if (!success) {
+            g_clear_error (&error);
+            g_message ("Existing monitor config (%s) not found during hotplug or laptop lid event."
+                       " Looking for legacy configuration (monitors.xml)", intended_filename);
+            success = apply_configuration_from_filename (manager, legacy_filename, TRUE, timestamp, &error);
+        }
         g_free (intended_filename);
+        g_free (legacy_filename);
 
         if (!success) {
                 /* We don't bother checking the error type.
@@ -1904,6 +1991,7 @@ apply_stored_configuration_at_startup (CsdXrandrManager *manager, guint32 timest
         gboolean success;
         char *backup_filename;
         char *intended_filename;
+        gchar *legacy_filename;
         GnomePnpIds *pnp_ids;
 
         /* This avoids the GnomePnpIds object being created multiple times.
@@ -1911,6 +1999,7 @@ apply_stored_configuration_at_startup (CsdXrandrManager *manager, guint32 timest
         pnp_ids = gnome_pnp_ids_new ();
         backup_filename = gnome_rr_config_get_backup_filename ();
         intended_filename = gnome_rr_config_get_intended_filename ();
+        legacy_filename = gnome_rr_config_get_legacy_filename ();
 
         /* 1. See if there was a "saved" configuration.  If there is one, it means
          * that the user had selected to change the display configuration, but the
@@ -1947,6 +2036,11 @@ apply_stored_configuration_at_startup (CsdXrandrManager *manager, guint32 timest
 
         success = apply_intended_configuration (manager, intended_filename, timestamp);
 
+        if (!success) {
+            g_message ("Existing monitor config (%s) not found at startup. Looking for legacy configuration (monitors.xml)", intended_filename);
+
+            success = apply_intended_configuration (manager, legacy_filename, timestamp);
+        }
 out:
         g_object_unref (pnp_ids);
 
@@ -1955,6 +2049,11 @@ out:
 
         g_free (backup_filename);
         g_free (intended_filename);
+        g_free (legacy_filename);
+
+        if (success) {
+            g_debug ("Successfully loaded existing monitor configuration\n", success);
+        }
 
         return success;
 }
