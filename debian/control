@@ -8,9 +8,8 @@ Uploaders:
  Fabio Fantoni <fantonifabio@tiscali.it>,
  Norbert Preining <norbert@preining.info>
 Build-Depends:
- autoconf-archive,
- automake,
- debhelper (>= 11.1~),
+ meson (>= 0.37.0),
+ debhelper-compat (= 13),
  docbook-xsl,
  intltool (>= 0.37.1),
  libcanberra-gtk3-dev,
