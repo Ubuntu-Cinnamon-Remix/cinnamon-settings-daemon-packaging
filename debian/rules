@@ -10,6 +10,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
+	    -Dinstall_binfiles=false \
 	    --libexecdir=lib/$(DEB_HOST_MULTIARCH)/cinnamon-settings-daemon
 
 override_dh_makeshlibs:
