@@ -1,4 +1,4 @@
-project('cinnamon-settings-daemon', 'c', version: '4.8.0', meson_version: '>= 0.47')
+project('cinnamon-settings-daemon', 'c', version: '4.8.1', meson_version: '>= 0.47')
 
 gnome = import('gnome')
 i18n = import('i18n')
@@ -122,6 +122,15 @@ csd_conf.set_quoted('LIBDIR', libdir)
 
 if gudev.found()
     cargs += '-DHAVE_GUDEV'
+endif
+
+if not get_option('enable_debug')
+    cargs += [
+          '-Wno-deprecated-declarations',
+          '-Wno-deprecated',
+          '-Wno-declaration-after-statement',
+          '-DGLIB_DISABLE_DEPRECATION_WARNINGS',
+    ]
 endif
 
 add_global_arguments(
