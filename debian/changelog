@@ -4,6 +4,7 @@ cinnamon-settings-daemon (4.8.0-1~) UNRELEASED; urgency=medium
   * switch to meson
   * bump dh compat to 13
   * remove and don't install apport file
+  * Remove unused override stanza from d/rules.
 
  -- Norbert Preining <norbert@preining.info>  Mon, 30 Nov 2020 04:30:37 +0900
 
