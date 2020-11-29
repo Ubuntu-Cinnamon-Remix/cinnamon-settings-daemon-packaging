@@ -1,12 +1,12 @@
-cinnamon-settings-daemon (4.8.0-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (4.8.1-1~) UNRELEASED; urgency=medium
 
-  * New upstream version 4.8.0
+  * New upstream version 4.8.1
   * switch to meson
   * bump dh compat to 13
   * remove and don't install apport file
   * Remove unused override stanza from d/rules.
 
- -- Norbert Preining <norbert@preining.info>  Mon, 30 Nov 2020 04:30:37 +0900
+ -- Norbert Preining <norbert@preining.info>  Mon, 30 Nov 2020 04:55:35 +0900
 
 cinnamon-settings-daemon (4.6.4-1) unstable; urgency=medium
 
