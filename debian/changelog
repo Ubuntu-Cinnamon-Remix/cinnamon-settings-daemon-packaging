@@ -3,8 +3,9 @@ cinnamon-settings-daemon (4.8.0-1~) UNRELEASED; urgency=medium
   * New upstream version 4.8.0
   * switch to meson
   * bump dh compat to 13
+  * remove and don't install apport file
 
- -- Norbert Preining <norbert@preining.info>  Thu, 26 Nov 2020 10:55:28 +0900
+ -- Norbert Preining <norbert@preining.info>  Mon, 30 Nov 2020 04:30:37 +0900
 
 cinnamon-settings-daemon (4.6.4-1) unstable; urgency=medium
 
