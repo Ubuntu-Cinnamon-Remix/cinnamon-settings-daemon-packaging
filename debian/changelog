@@ -5,8 +5,9 @@ cinnamon-settings-daemon (4.8.1-1~) UNRELEASED; urgency=medium
   * bump dh compat to 13
   * remove and don't install apport file
   * Remove unused override stanza from d/rules.
+  * Bump inter-cinnamon deps to 4.8
 
- -- Norbert Preining <norbert@preining.info>  Mon, 30 Nov 2020 04:55:35 +0900
+ -- Norbert Preining <norbert@preining.info>  Tue, 01 Dec 2020 08:38:23 +0900
 
 cinnamon-settings-daemon (4.6.4-1) unstable; urgency=medium
 
