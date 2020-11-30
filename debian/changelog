@@ -1,4 +1,4 @@
-cinnamon-settings-daemon (4.8.1-1~) UNRELEASED; urgency=medium
+cinnamon-settings-daemon (4.8.1-1) experimental; urgency=medium
 
   * New upstream version 4.8.1
   * switch to meson
@@ -7,7 +7,7 @@ cinnamon-settings-daemon (4.8.1-1~) UNRELEASED; urgency=medium
   * Remove unused override stanza from d/rules.
   * Bump inter-cinnamon deps to 4.8
 
- -- Norbert Preining <norbert@preining.info>  Tue, 01 Dec 2020 08:38:23 +0900
+ -- Norbert Preining <norbert@preining.info>  Tue, 01 Dec 2020 08:38:32 +0900
 
 cinnamon-settings-daemon (4.6.4-1) unstable; urgency=medium
 
