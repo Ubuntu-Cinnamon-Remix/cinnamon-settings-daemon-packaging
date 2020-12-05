@@ -1,4 +1,4 @@
-project('cinnamon-settings-daemon', 'c', version: '4.8.1', meson_version: '>= 0.47')
+project('cinnamon-settings-daemon', 'c', version: '4.8.2', meson_version: '>= 0.47')
 
 gnome = import('gnome')
 i18n = import('i18n')
@@ -39,7 +39,7 @@ if dbussystemdir == ''
 endif
 
 # dependencies
-cinnamon_desktop_required = '>= 3.2.2'
+cinnamon_desktop_required = '>= 4.8.0'
 canberra = dependency('libcanberra-gtk3')
 cinnamon_desktop = dependency('cinnamon-desktop', version: cinnamon_desktop_required)
 colord = dependency('colord', version: '>= 0.1.27')
