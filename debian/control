@@ -30,7 +30,7 @@ Build-Depends:
  librsvg2-dev,
  libsystemd-dev [linux-any],
  libupower-glib-dev (>= 0.9.11),
- libwacom-dev (>= 0.4) [linux-any],
+ libwacom-dev (>= 0.4) [!s390x !hurd-any !kfreebsd-any],
  libx11-dev,
  libxext-dev,
  libxi-dev,
@@ -38,6 +38,8 @@ Build-Depends:
  libxtst-dev,
  xserver-xorg-input-wacom [!s390x !hurd-any !kfreebsd-any],
  xsltproc,
+Build-Conflicts:
+ libwacom-dev [s390x hurd-any kfreebsd-any],
 Standards-Version: 4.1.4
 Homepage: http://cinnamon.linuxmint.com
 Vcs-Browser: https://salsa.debian.org/cinnamon-team/cinnamon-settings-daemon
