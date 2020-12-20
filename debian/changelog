@@ -1,3 +1,12 @@
+cinnamon-settings-daemon (4.8.2-3) UNRELEASED; urgency=medium
+
+  * d/control: Avoid libwacom-dev when not using xserver-xorg-input-wacom
+    Thanks to Simon McVittie (Closes: 977762)
+  * d/control: Don't B-D on librsvg2-dev where not needed
+    Thanks to Simon McVittie
+
+ -- Fabio Fantoni <fantonifabio@tiscali.it>  Sun, 20 Dec 2020 18:29:31 +0100
+
 cinnamon-settings-daemon (4.8.2-2) unstable; urgency=medium
 
   * Release to unstable.
