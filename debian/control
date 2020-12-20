@@ -27,7 +27,7 @@ Build-Depends:
  libnss3-dev,
  libpolkit-gobject-1-dev,
  libpulse-dev (>= 0.9.16),
- librsvg2-dev,
+ librsvg2-dev [!s390x !hurd-any !kfreebsd-any],
  libsystemd-dev [linux-any],
  libupower-glib-dev (>= 0.9.11),
  libwacom-dev (>= 0.4) [!s390x !hurd-any !kfreebsd-any],
