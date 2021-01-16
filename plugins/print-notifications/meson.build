@@ -28,8 +28,10 @@ executable(
     install: true,
     install_dir: libexecdir,
 )
-if install_binfiles
-    meson.add_install_script(ln_script, libexecdir, bindir, 'csd-print-notifications')
+
+meson.add_install_script(ln_script, libexecdir, bindir, 'csd-print-notifications')
+if libexecdir != pkglibdir
+    meson.add_install_script(ln_script, libexecdir, pkglibdir, 'csd-print-notifications')
 endif
 
 executable(
@@ -40,8 +42,10 @@ executable(
     install: true,
     install_dir: libexecdir,
 )
-if install_binfiles
-    meson.add_install_script(ln_script, libexecdir, bindir, 'csd-printer')
+
+meson.add_install_script(ln_script, libexecdir, bindir, 'csd-printer')
+if libexecdir != pkglibdir
+    meson.add_install_script(ln_script, libexecdir, pkglibdir, 'csd-printer')
 endif
 
 configure_file(
