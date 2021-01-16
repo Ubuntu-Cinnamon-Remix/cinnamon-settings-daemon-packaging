@@ -24,8 +24,10 @@ executable(
     install: true,
     install_dir: libexecdir,
 )
-if install_binfiles
-    meson.add_install_script(ln_script, libexecdir, bindir, 'csd-automount')
+
+meson.add_install_script(ln_script, libexecdir, bindir, 'csd-automount')
+if libexecdir != pkglibdir
+    meson.add_install_script(ln_script, libexecdir, pkglibdir, 'csd-automount')
 endif
 
 test_automount_dialog_sources = [
