@@ -1,3 +1,11 @@
+cinnamon-settings-daemon (4.8.5-1) unstable; urgency=medium
+
+  * New upstream version 4.8.5
+  * Don't use dropped meson option: install_binfiles
+  * Install new files in /usr/bin
+
+ -- Norbert Preining <norbert@preining.info>  Sat, 16 Jan 2021 20:21:56 +0900
+
 cinnamon-settings-daemon (4.8.3-1) unstable; urgency=medium
 
   * New upstream version 4.8.3
