@@ -210,7 +210,7 @@ static void      inhibit_lid_switch (CsdPowerManager *manager);
 static void      uninhibit_lid_switch (CsdPowerManager *manager);
 static void      setup_locker_process (gpointer user_data);
 static void      lock_screen_with_custom_saver (CsdPowerManager *manager, gchar *custom_saver, gboolean idle_lock);
-static void      lock_screensaver (CsdPowerManager *manager);
+static void      activate_screensaver (CsdPowerManager *manager, gboolean force_lock);
 static void      kill_lid_close_safety_timer (CsdPowerManager *manager);
 
 int             backlight_get_output_id (CsdPowerManager *manager);
@@ -367,6 +367,8 @@ engine_emit_changed (CsdPowerManager *manager,
         if (manager->priv->power_iface == NULL)
                 return;
 
+        gboolean need_flush = FALSE;
+
         if (icon_changed) {
                 GIcon *gicon;
                 gchar *gicon_str;
@@ -375,6 +377,7 @@ engine_emit_changed (CsdPowerManager *manager,
                 gicon_str = g_icon_to_string (gicon);
 
                 csd_power_set_icon (manager->priv->power_iface, gicon_str);
+                need_flush = TRUE;
 
                 g_free (gicon_str);
                 g_object_unref (gicon);
@@ -386,8 +389,13 @@ engine_emit_changed (CsdPowerManager *manager,
                 tooltip = engine_get_summary (manager);
 
                 csd_power_set_tooltip (manager->priv->power_iface, tooltip);
+                need_flush = TRUE;
 
                 g_free (tooltip);
+        }
+
+        if (need_flush) {
+                g_dbus_interface_skeleton_flush (G_DBUS_INTERFACE_SKELETON (manager->priv->power_iface));
         }
 }
 
@@ -1261,14 +1269,14 @@ engine_charge_low (CsdPowerManager *manager, UpDevice *device)
                 title = _("Mouse battery low");
 
                 /* TRANSLATORS: tell user more details */
-                message = g_strdup_printf (_("Wireless mouse is low in power (%.0f%%)"), percentage);
+                message = g_strdup_printf (_("Wireless mouse is low in power"));
 
         } else if (kind == UP_DEVICE_KIND_KEYBOARD) {
                 /* TRANSLATORS: keyboard is getting a little low */
                 title = _("Keyboard battery low");
 
                 /* TRANSLATORS: tell user more details */
-                message = g_strdup_printf (_("Wireless keyboard is low in power (%.0f%%)"), percentage);
+                message = g_strdup_printf (_("Wireless keyboard is low in power"));
 
         } else if (kind == UP_DEVICE_KIND_PDA) {
                 /* TRANSLATORS: PDA is getting a little low */
@@ -1426,17 +1434,15 @@ engine_charge_critical (CsdPowerManager *manager, UpDevice *device)
                 title = _("Mouse battery low");
 
                 /* TRANSLATORS: the device is just going to stop working */
-                message = g_strdup_printf (_("Wireless mouse is very low in power (%.0f%%). "
-                                             "This device will soon stop functioning if not charged."),
-                                           percentage);
+                message = g_strdup_printf (_("Wireless mouse is very low in power. "
+                                             "This device will soon stop functioning if not charged."));
         } else if (kind == UP_DEVICE_KIND_KEYBOARD) {
                 /* TRANSLATORS: the keyboard battery is very low */
                 title = _("Keyboard battery low");
 
                 /* TRANSLATORS: the device is just going to stop working */
-                message = g_strdup_printf (_("Wireless keyboard is very low in power (%.0f%%). "
-                                             "This device will soon stop functioning if not charged."),
-                                           percentage);
+                message = g_strdup_printf (_("Wireless keyboard is very low in power. "
+                                             "This device will soon stop functioning if not charged."));
         } else if (kind == UP_DEVICE_KIND_PDA) {
 
                 /* TRANSLATORS: the PDA battery is very low */
@@ -1935,7 +1941,7 @@ do_power_action_type (CsdPowerManager *manager,
         switch (action_type) {
         case CSD_POWER_ACTION_SUSPEND:
                 if (should_lock_on_suspend (manager)) {
-                        lock_screensaver (manager);
+                        activate_screensaver (manager, TRUE);
                 }
 
                 turn_monitors_off (manager);
@@ -1952,7 +1958,7 @@ do_power_action_type (CsdPowerManager *manager,
                 break;
         case CSD_POWER_ACTION_HIBERNATE:
                 if (should_lock_on_suspend (manager)) {
-                        lock_screensaver (manager);
+                        activate_screensaver (manager, TRUE);
                 }
 
                 turn_monitors_off (manager);
@@ -1967,7 +1973,7 @@ do_power_action_type (CsdPowerManager *manager,
         case CSD_POWER_ACTION_BLANK:
                 /* Lock first or else xrandr might reconfigure stuff and the ss's coverage
                  * may be incorrect upon return. */
-                lock_screensaver (manager);
+                activate_screensaver (manager, FALSE);
                 turn_monitors_off (manager);
                 break;
         case CSD_POWER_ACTION_NOTHING:
@@ -3571,7 +3577,7 @@ quit:
 }
 
 static void
-lock_screensaver (CsdPowerManager *manager)
+activate_screensaver (CsdPowerManager *manager, gboolean force_lock)
 {
     GError *error;
     gboolean ret;
@@ -3589,7 +3595,12 @@ lock_screensaver (CsdPowerManager *manager)
      * a custom screen saver, default to invoking cinnamon-screensaver */
     /* do this sync to ensure it's on the screen when we start suspending */
     error = NULL;
-    ret = g_spawn_command_line_sync ("cinnamon-screensaver-command --lock", NULL, NULL, NULL, &error);
+
+    if (force_lock) {
+        ret = g_spawn_command_line_sync ("cinnamon-screensaver-command --lock", NULL, NULL, NULL, &error);
+    } else {
+        ret = g_spawn_command_line_sync ("cinnamon-screensaver-command -a", NULL, NULL, NULL, &error);
+    }
 
     if (!ret) {
         g_warning ("Couldn't lock screen: %s", error->message);
@@ -3751,18 +3762,18 @@ idle_idletime_alarm_expired_cb (GpmIdletime *idletime,
                 idle_set_mode (manager, CSD_POWER_IDLE_MODE_DIM);
                 break;
         case CSD_POWER_IDLETIME_LOCK_ID:
-                /* cinnamon-screensaver has its own lock after some idle delay.
-                 * If we have a custom screensaver configured, we have to use
-                 * the idle delay from cinnamon-settings-daemon to trigger the
-                 * screen lock after the idle timeout */
                 ; /* empty statement, because C does not allow a declaration to
                    * follow a label */
                 gchar *custom_saver = g_settings_get_string (manager->priv->settings_screensaver,
                                                              "custom-screensaver-command");
-                if (custom_saver && g_strcmp0 (custom_saver, "") != 0)
+                if (custom_saver && g_strcmp0 (custom_saver, "") != 0) {
                         lock_screen_with_custom_saver (manager,
                                                        custom_saver,
                                                        TRUE);
+                } else {
+                    activate_screensaver (manager, FALSE);
+                }
+
                 g_free (custom_saver);
 
                 break;
@@ -4052,7 +4063,7 @@ handle_suspend_actions (CsdPowerManager *manager)
          * suppose.)
          */
         if (should_lock_on_suspend (manager)) {
-            lock_screensaver (manager);
+            activate_screensaver (manager, TRUE);
         }
 
         /* lift the delay inhibit, so logind can proceed */
