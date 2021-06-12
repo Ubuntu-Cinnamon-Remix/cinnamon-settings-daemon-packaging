@@ -1,3 +1,10 @@
+cinnamon-settings-daemon (5.0.1-1) experimental; urgency=medium
+
+  * New upstream version 5.0.1
+  * Add myself as Uploader
+
+ -- Joshua Peisach <itzswirlz2020@outlook.com>  Sat, 12 Jun 2021 13:45:43 -0400
+
 cinnamon-settings-daemon (4.8.5-1) unstable; urgency=medium
 
   * New upstream version 4.8.5
